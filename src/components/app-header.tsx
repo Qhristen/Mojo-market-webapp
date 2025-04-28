@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
 import { ThemeSelect } from '@/components/theme-select'
 import { ClusterButton, WalletButton } from '@/components/solana/solana-provider'
+import Image from 'next/image'
 
 export function AppHeader({ links = [] }: { links: { label: string; path: string }[] }) {
   const pathname = usePathname()
@@ -16,26 +17,31 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
   }
 
   return (
-    <header className="relative z-50 px-4 py-2 bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-400">
-      <div className="mx-auto flex justify-between items-center">
+    <header className="relative z-50 py-2 bg-transparent">
+      <div className="max-w-6xl mx-auto flex justify-between items-center py-4 px-6 rounded-md bg-card text-card-foreground">
         <div className="flex items-baseline gap-4">
           <Link className="text-xl hover:text-neutral-500 dark:hover:text-white" href="/">
-            <span>Placeholder</span>
+            {/* <span className='font-PPMori'>Mojo market</span> */}
+            <Image width={150} height={50} className='dark:brightness-200' src="/assets/images/mojo_logo.png" alt="mojo_logo" />
           </Link>
-          <div className="hidden md:flex items-center">
-            <ul className="flex gap-4 flex-nowrap items-center">
-              {links.map(({ label, path }) => (
-                <li key={path}>
-                  <Link
-                    className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
-                    href={path}
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        </div>
+        <div className="hidden md:flex items-center">
+          <ul className="flex gap-4 flex-nowrap items-center">
+            {links.map(({ label, path }) => (
+              <li key={path}>
+                <Link
+                  // className={`px-4 py-2 rounded-md border border-border bg-card hover:bg-accent/5 transition-colors ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
+                  // className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
+                  href={path}
+                >
+                  <Button variant={"outline"} size={"sm"} className={`${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`} >
+
+                  {label}
+                  </Button>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowMenu(!showMenu)}>
