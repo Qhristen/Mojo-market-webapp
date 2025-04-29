@@ -77,7 +77,7 @@ const tokenPairs: TokenPair[] = [
   },
 ]
 
-export function Market({ page, limit }: Props) {
+export function Market() {
   return (
     <div>
       <Card className="flex itmes-center justify-between p-6 mt-2 bg-primary-mojo">
@@ -89,12 +89,11 @@ export function Market({ page, limit }: Props) {
       <DataTable
         searchKey="pairedSymbol"
         columns={columns}
-        page={page}
+       
         data={tokenPairs}
         pageCount={0}
         pageIndex={0}
         nextPage={0}
-        pageSize={limit}
       />
     </div>
   )

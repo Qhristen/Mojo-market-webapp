@@ -33,8 +33,8 @@ interface DataTableProps<TData, TValue> {
   searchKey: string;
   pageCount: number;
   pageIndex: number;
-  pageSize: number;
-  page: number;
+  pageSize?: number;
+  page?: number;
   nextPage: number;
 }
 
@@ -42,11 +42,11 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
-  page,
+  page = 1,
   pageCount,
   pageIndex: pIdx,
   nextPage,
-  pageSize: limit,
+  pageSize: limit = 10,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
