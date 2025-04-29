@@ -11,3 +11,16 @@ export interface TokenPair {
     price: string;        // Current price ratio between tokens (as a string to handle precision)
     fee?: number;         // Optional fee percentage (e.g., 0.3% for Uniswap V2)
   }
+
+  export interface Player {
+    id: number;
+    name: string;
+    position: string;
+    league: string;
+    team: string;
+    goals: number;
+    assists: number;
+    appearances: number;
+    image: string;
+    leagueBadge: string;
+  }

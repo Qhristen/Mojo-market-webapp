@@ -81,7 +81,7 @@ export function Market() {
   return (
     <div>
       <Card className="flex itmes-center justify-between p-6 mt-2 bg-primary-mojo">
-        <h3 className="text-3xl font-jersey25 leading-7 bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
+        <h3 className="text-4xl font-jersey15 text-white leading-7">
           Watch the game, <br /> track the stats & make <br />  your next big trade.
         </h3>
       </Card>
