@@ -34,7 +34,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
                   // className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
                   href={path}
                 >
-                  <Button variant={"outline"} size={"sm"} className={`${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`} >
+                  <Button variant={"outline"} size={"sm"} className={`${isActive(path) ? 'text-neutral-500' : ''}`} >
 
                   {label}
                   </Button>
