@@ -1,18 +1,19 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
-import { CellAction } from "./cell-action"
-import { TokenPair } from "@/types";
+import { Pair } from "@/generated/ts";
+import { ColumnDef } from "@tanstack/react-table";
+import { MaybeAccount } from "gill";
+import { CellAction } from "./cell-action";
 
 
-export const columns: ColumnDef<TokenPair>[] = [
+export const columns: ColumnDef<MaybeAccount<Pair>>[] = [
   {
     accessorKey: "pairedSymbol",
     header: "Name",
   },
 
   {
-    accessorKey: "pairAddress",
+    accessorKey: "address",
     header: "Pair Address",
   },
  

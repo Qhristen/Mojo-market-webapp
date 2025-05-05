@@ -1,7 +1,12 @@
 'use client'
 
-import { TOKEN_2022_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS } from 'gill/programs/token'
-import { getTransferSolInstruction } from 'gill/programs'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  getAssociatedTokenAccountAddress,
+  TOKEN_2022_PROGRAM_ADDRESS,
+  TOKEN_PROGRAM_ADDRESS,
+} from 'gill/programs/token'
+import { getTransferSolInstruction, SYSTEM_PROGRAM_ADDRESS } from 'gill/programs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   UiWalletAccount,
@@ -17,7 +22,11 @@ import {
   assertIsTransactionMessageWithSingleSendingSigner,
   Blockhash,
   createTransactionMessage,
+  generateKeyPair,
+  generateKeyPairSigner,
   getBase58Decoder,
+  getExplorerLink,
+  getProgramDerivedAddress,
   lamports,
   pipe,
   setTransactionMessageFeePayerSigner,
@@ -28,6 +37,12 @@ import {
 } from 'gill'
 import { toast } from 'sonner'
 import { useTransactionToast } from '../use-transaction-toast'
+import {
+  fetchPlatformState,
+  getInitializePlatformInstructionAsync,
+  MOJO_CONTRACT_PROGRAM_ADDRESS,
+} from '@/generated/ts'
+import { baseMint } from '@/lib/constant'
 
 export function useGetBalance({ address }: { address: Address }) {
   const { cluster } = useWalletUiCluster()
@@ -84,7 +99,7 @@ export function useGetTokenAccounts({ address }: { address: Address }) {
 export function useTransferSol({ address, account }: { address: Address; account: UiWalletAccount }) {
   const { cluster } = useWalletUiCluster()
   const { client } = useWalletUi()
-  const toastTransaction = useTransactionToast()
+  const toastTransaction = useTransactionToast(cluster)
   const txSigner = useWalletAccountTransactionSendingSigner(account, cluster.id)
   const queryClient = useQueryClient()
 
@@ -130,7 +145,7 @@ export function useRequestAirdrop({ address }: { address: Address }) {
   const { cluster } = useWalletUiCluster()
   const { client } = useWalletUi()
   const queryClient = useQueryClient()
-  const toastTransaction = useTransactionToast()
+  const toastTransaction = useTransactionToast(cluster)
   const airdrop = airdropFactory(client)
 
   return useMutation({
@@ -192,4 +207,103 @@ async function createTransaction({
     signature: getBase58Decoder().decode(signature),
     latestBlockhash,
   }
+}
+
+export function useInitializePlatform(account: UiWalletAccount) {
+  const { cluster } = useWalletUiCluster()
+  const { client } = useWalletUi()
+  const toastTransaction = useTransactionToast(cluster)
+  const queryClient = useQueryClient()
+
+  const txSigner = useWalletAccountTransactionSendingSigner(account, cluster.id)
+
+  return useMutation({
+    mutationKey: ['initialize-platform', { cluster, account }],
+    mutationFn: async () => {
+      try {
+        const [platformPDA] = await getProgramDerivedAddress({
+          programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
+          seeds: ['platform-state'],
+        })
+
+        const platformTreasury = await getAssociatedTokenAccountAddress(
+          baseMint,
+          platformPDA,
+          TOKEN_PROGRAM_ADDRESS,
+        )
+
+        // get the latest blockhash
+        const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()
+
+        const ix = await getInitializePlatformInstructionAsync({
+          admin: txSigner,
+          baseTokenMint: baseMint,
+          protocolFeeRate: 30,
+          platformState: platformPDA,
+          platformTreasury,
+          tokenProgram: TOKEN_PROGRAM_ADDRESS,
+          systemProgram: SYSTEM_PROGRAM_ADDRESS,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+        })
+        console.log('ix', ix)
+        const message = pipe(
+          createTransactionMessage({ version: 0 }),
+          (m) => setTransactionMessageFeePayerSigner(txSigner, m),
+          (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+          (m) => appendTransactionMessageInstruction(ix, m),
+        )
+        assertIsTransactionMessageWithSingleSendingSigner(message)
+
+        console.log('ix22', ix)
+        try {
+          const signedTransaction = await signAndSendTransactionMessageWithSigners(message)
+          let signature = getBase58Decoder().decode(signedTransaction)
+          console.log(
+            'Explorer:',
+            getExplorerLink({
+              cluster: cluster.cluster,
+              transaction: signature,
+            }),
+          )
+          return signature
+        } catch (error: any) {
+          if (error.logs) {
+            console.error('Transaction failed with logs:', error.logs)
+          }
+          throw new Error(`Transaction failed: ${error}`)
+        }
+      } catch (error) {
+        console.log(error, 'err')
+        throw error
+      }
+    },
+    onSuccess: (signature: string) => {
+      toastTransaction(signature)
+      queryClient.invalidateQueries({ queryKey: ['fetch-platform-state', { cluster }] })
+    },
+    onError: (error) => {
+      toast.error(`Transaction failed! ${error}`)
+    },
+  })
+}
+
+export function usFetchPlatformState() {
+  const { cluster } = useWalletUiCluster()
+  const { client } = useWalletUi()
+
+  return useQuery({
+    queryKey: ['fetch-platform-state', { cluster }],
+    queryFn: async () => {
+      const [platformPDA] = await getProgramDerivedAddress({
+        programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
+        seeds: ['platform-state'],
+      })
+      console.log(platformPDA, 'platformPDA')
+
+      const platformState = await fetchPlatformState(client.rpc, platformPDA, { commitment: 'confirmed' })
+      console.log(platformState.data, 'platformState.data')
+
+      return platformState
+    },
+  })
 }

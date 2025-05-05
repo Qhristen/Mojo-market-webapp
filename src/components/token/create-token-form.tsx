@@ -1,16 +1,22 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { UiWalletAccount, useWalletUi } from '@wallet-ui/react'
+import { generateKeyPairSigner } from 'gill'
+import { fetchMetadata } from 'gill/programs'
+import { Loader2 } from 'lucide-react'
+import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
+import { useInitializePlatform, usFetchPlatformState } from '../account/account-data-access'
+import { AppAlert } from '../app-alert'
+import { Button } from '../ui/button'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { Button } from '../ui/button'
-import { Check, Upload, X } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { Label } from '../ui/label'
+import { useCreateTokenWithMetatData, useMintToken, useUploadMetadata } from './create-token-data-access'
+import { TokenData } from '@/types'
 
 const formSchema = z.object({
   tokenName: z.string().min(2, 'Token name must be at least 2 characters'),
@@ -25,11 +31,19 @@ type FileType = {
   size: number
   url?: string
 }
+type FormData = z.infer<typeof formSchema>
 
-export default function CreateTokenForm({ onNext }: { onNext: () => void }) {
+export default function CreateTokenForm({ onNext, account, setPlayerTokenData }: { onNext: () => void; account: UiWalletAccount, setPlayerTokenData: (data: TokenData)=> void }) {
   const [uploadedFiles, setUploadedFiles] = useState<FileType[]>([])
+  const { client } = useWalletUi()
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const creatToken = useCreateTokenWithMetatData(account)
+  const mintToken = useMintToken(account)
+  const platformQuery = usFetchPlatformState()
+  const platformMutation = useInitializePlatform(account)
+  const metadataMutation = useUploadMetadata(account)
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tokenName: '',
@@ -39,9 +53,46 @@ export default function CreateTokenForm({ onNext }: { onNext: () => void }) {
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    console.log('Form submitted:', data)
-    alert('Form submitted successfully! Check console for data.')
+  const onSubmit = async (data: FormData) => {
+    if (!account) {
+      toast.error(`No wallet account connected`)
+      return
+    }
+    // const uri = await metadataMutation.mutateAsync({
+    //   name: data.tokenName,
+    //   symbol: data.tokenSymbol,
+    //   description: data.tokenDescription,
+    //   imageUrl: 'https://resources.premierleague.com/premierleague/photos/players/250x250/p223094.png',
+    // })
+
+    const mint = await generateKeyPairSigner()
+    await creatToken.mutateAsync({
+      mint,
+      metadata: {
+        isMutable: true,
+        name: data.tokenName,
+        symbol: data.tokenSymbol,
+        uri: "",
+      },
+    })
+
+    await mintToken.mutateAsync({
+      mint,
+      amount: Number(data.tokenSupply),
+    })
+
+    setPlayerTokenData({ 
+      mint: mint,
+      name: data.tokenName,
+      symbol: data.tokenSymbol,
+      description: data.tokenDescription,
+      uri: "https://resources.premierleague.com/premierleague/photos/players/250x250/p223094.png"
+    })
+    
+    // const asset = await fetchMetadata(client.rpc, mint.address, { commitment: 'confirmed' })
+    // console.log(asset, 'asset')
+
+    onNext()
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +113,35 @@ export default function CreateTokenForm({ onNext }: { onNext: () => void }) {
     if (newFiles[index].url) URL.revokeObjectURL(newFiles[index].url)
     newFiles.splice(index, 1)
     setUploadedFiles(newFiles)
+  }
+
+  if (platformQuery.isLoading) {
+    return <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+  }
+
+  if (platformQuery.isError || !platformQuery.data) {
+    return (
+      <AppAlert
+        action={
+          <Button
+            variant="outline"
+            disabled={platformMutation.isPending}
+            onClick={async () => await platformMutation.mutateAsync().catch((err) => console.log(err))}
+          >
+            {platformMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Initializing...
+              </>
+            ) : (
+              'Initialize platform'
+            )}
+          </Button>
+        }
+      >
+        Platform is not initialized. Please initialize the platform to continue.
+      </AppAlert>
+    )
   }
 
   return (
@@ -128,7 +208,7 @@ export default function CreateTokenForm({ onNext }: { onNext: () => void }) {
             )}
           />
 
-          <Card className='border border-dashed border-primary/50 p-8 rounded-md'>
+          {/* <Card className="border border-dashed border-primary/50 p-8 rounded-md">
             <CardHeader>
               <CardTitle>Image Upload</CardTitle>
               <CardDescription>Upload token image</CardDescription>
@@ -167,11 +247,17 @@ export default function CreateTokenForm({ onNext }: { onNext: () => void }) {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
 
-          <Button onClick={onNext} className="w-full">
-            Complete Setup
-            <Check className="ml-2 h-4 w-4" />
+          <Button className="w-full" disabled={creatToken.isPending || mintToken.isPending}>
+            {creatToken.isPending || mintToken.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              '  Create & mint athelet token'
+            )}
           </Button>
         </form>
       </Form>

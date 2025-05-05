@@ -1,23 +1,33 @@
 'use client'
 
-import React, { useState } from 'react'
-import CreateTokenForm from './create-token-form'
+import { useWalletUi } from '@wallet-ui/react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import CreateTokenForm from './create-token-form'
+import { KeypairSigner } from '@metaplex-foundation/umi'
+import { TokenData } from '@/types'
+import CreatPool from './create-pool'
+
+
+
 export default function Create() {
   const [currentStep, setCurrentStep] = useState(0)
+  const [playerTokenData, setPlayerTokenData] = useState<TokenData>()
+  const { account } = useWalletUi()
 
   const onboardingSteps = [
     {
       id: 'metatadata',
       title: 'Metata data',
-      component: <CreateTokenForm onNext={() => setCurrentStep(1)} />,
+      component: account ? <CreateTokenForm onNext={() => setCurrentStep(1)} setPlayerTokenData={setPlayerTokenData} account={account} /> : null,
     },
     {
-      id: 'upload',
-      title: 'Upload image',
-      component: <CreateTokenForm onNext={() => setCurrentStep(1)} />,
+      id: 'Create pool',
+      title: 'Create liquidity pool',
+      component: account ? <CreatPool onNext={() => setCurrentStep(2)} tokenData={playerTokenData as TokenData} account={account} />: null,
     },
   ]
+
   return (
     <div>
       <Card className="p-6">
@@ -25,15 +35,15 @@ export default function Create() {
           <CardHeader className="p-0">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Create new token</CardTitle>
+                <CardTitle className='font-jersey25 text-3xl'>Create new token</CardTitle>
                 <CardDescription>
-                  Step {currentStep + 1} of {onboardingSteps.length}
+                  {account ? `Step ${currentStep + 1} of ${onboardingSteps.length}` : 'Wallet not connected'}
                 </CardDescription>
               </div>
               <StepIndicator totalSteps={onboardingSteps.length} currentStep={currentStep} />
             </div>
           </CardHeader>
-          <CardContent className="p-0">{onboardingSteps[currentStep].component}</CardContent>
+          {account ? <CardContent className="p-0">{onboardingSteps[currentStep].component}</CardContent> : null}
         </div>
       </Card>
     </div>

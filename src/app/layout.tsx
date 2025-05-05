@@ -1,3 +1,4 @@
+
 import { AppLayout } from '@/components/app-layout'
 import { AppProviders } from '@/components/app-providers'
 import type { Metadata } from 'next'
@@ -14,8 +15,8 @@ const links: { label: string; path: string }[] = [
   // More links...
   { label: 'Market', path: '/' },
   { label: 'Swap', path: '/swap' },
+  { label: 'Liquidity', path: '/liquidity' },
   { label: 'Stats', path: '/stats' },
-  { label: 'Portfolio', path: '/portfolio' },
 ]
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

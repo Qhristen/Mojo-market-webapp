@@ -1,5 +1,5 @@
 {
-  "name": "template-next-tailwind",
+  "name": "mojo_markets",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -9,10 +9,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "create-codama-idl": "npx tsx scripts/create-codama-idl.ts",
+    "codama-generate-client": "npx tsx scripts/codama-client.ts",
+    "generate": "npm run create-codama-idl && npm run codama-generate-client"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
+    "@metaplex-foundation/umi": "^1.2.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.2.0",
+    "@metaplex-foundation/umi-uploader-irys": "^1.2.0",
     "@radix-ui/react-accordion": "^1.2.8",
     "@radix-ui/react-avatar": "^1.1.7",
     "@radix-ui/react-checkbox": "^1.2.3",
@@ -29,12 +35,14 @@
     "@radix-ui/react-switch": "^1.2.2",
     "@radix-ui/react-tabs": "^1.1.9",
     "@radix-ui/react-tooltip": "^1.2.4",
+    "@solana/webcrypto-ed25519-polyfill": "^2.1.0",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-table": "^8.21.3",
     "@wallet-ui/react": "1.1.0-canary-20250415034938",
     "@wallet-ui/tailwind": "1.1.0-canary-20250415034938",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "codama": "^1.2.13",
     "date-fns": "^4.1.0",
     "gill": "^0.8.2",
     "jotai": "^2.12.3",
@@ -63,6 +71,7 @@
     "eslint-config-next": "15.3.1",
     "prettier": "^3.5.3",
     "tailwindcss": "^4.1.4",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "ws": "^8.18.1"
   }

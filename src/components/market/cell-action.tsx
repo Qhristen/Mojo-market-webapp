@@ -1,20 +1,13 @@
 "use client";
 
-import { Copy, Edit, MoreHorizontal, Trash, View } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { TokenPair } from "@/types";
+import { Pair } from "@/generated/ts";
+import { MaybeAccount } from "gill";
 
 interface CellActionProps {
-  data: TokenPair;
+  data: MaybeAccount<Pair>;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
