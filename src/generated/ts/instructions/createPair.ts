@@ -7,8 +7,6 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -18,10 +16,6 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -121,19 +115,13 @@ export type CreatePairInstruction<
     ]
   >;
 
-export type CreatePairInstructionData = {
-  discriminator: ReadonlyUint8Array;
-  pairName: string;
-};
+export type CreatePairInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type CreatePairInstructionDataArgs = { pairName: string };
+export type CreatePairInstructionDataArgs = {};
 
 export function getCreatePairInstructionDataEncoder(): Encoder<CreatePairInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['pairName', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-    ]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: CREATE_PAIR_DISCRIMINATOR })
   );
 }
@@ -141,7 +129,6 @@ export function getCreatePairInstructionDataEncoder(): Encoder<CreatePairInstruc
 export function getCreatePairInstructionDataDecoder(): Decoder<CreatePairInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['pairName', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
@@ -181,7 +168,6 @@ export type CreatePairAsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  pairName: CreatePairInstructionDataArgs['pairName'];
 };
 
 export async function getCreatePairInstructionAsync<
@@ -260,9 +246,6 @@ export async function getCreatePairInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.pair.value) {
@@ -370,9 +353,7 @@ export async function getCreatePairInstructionAsync<
       getAccountMeta(accounts.rent),
     ],
     programAddress,
-    data: getCreatePairInstructionDataEncoder().encode(
-      args as CreatePairInstructionDataArgs
-    ),
+    data: getCreatePairInstructionDataEncoder().encode({}),
   } as CreatePairInstruction<
     TProgramAddress,
     TAccountCreator,
@@ -418,7 +399,6 @@ export type CreatePairInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   rent?: Address<TAccountRent>;
-  pairName: CreatePairInstructionDataArgs['pairName'];
 };
 
 export function getCreatePairInstruction<
@@ -496,9 +476,6 @@ export function getCreatePairInstruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
@@ -534,9 +511,7 @@ export function getCreatePairInstruction<
       getAccountMeta(accounts.rent),
     ],
     programAddress,
-    data: getCreatePairInstructionDataEncoder().encode(
-      args as CreatePairInstructionDataArgs
-    ),
+    data: getCreatePairInstructionDataEncoder().encode({}),
   } as CreatePairInstruction<
     TProgramAddress,
     TAccountCreator,

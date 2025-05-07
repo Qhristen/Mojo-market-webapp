@@ -27,7 +27,7 @@ export function AppModal({
         <div className="grid gap-4 py-4">{children}</div>
         <DialogFooter>
           {submit ? (
-            <Button type="submit" onClick={submit} disabled={submitDisabled}>
+            <Button type="submit" size={"lg"} className='w-full' onClick={submit} disabled={submitDisabled}>
               {submitLabel || 'Save'}
             </Button>
           ) : null}

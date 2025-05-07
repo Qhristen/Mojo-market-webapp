@@ -158,7 +158,7 @@ export async function fetchAllPair(
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
-decodePair
+
 export async function fetchAllMaybePair(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,

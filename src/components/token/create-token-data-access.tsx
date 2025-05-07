@@ -1,11 +1,12 @@
 import {
   fetchAllMaybePair,
+  fetchAllPair,
   getCreatePairInstructionAsync,
   getPairDiscriminatorBytes,
   MOJO_CONTRACT_PROGRAM_ADDRESS,
-  PAIR_DISCRIMINATOR
+  PAIR_DISCRIMINATOR,
 } from '@/generated/ts'
-import { baseMint } from '@/lib/constant'
+import { baseMint, helius_url } from '@/lib/constant'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   UiWalletAccount,
@@ -21,7 +22,7 @@ import {
   getExplorerLink,
   getProgramDerivedAddress,
   KeyPairSigner,
-  signAndSendTransactionMessageWithSigners
+  signAndSendTransactionMessageWithSigners,
 } from 'gill'
 import { SYSTEM_PROGRAM_ADDRESS } from 'gill/programs'
 import {
@@ -34,6 +35,8 @@ import {
 } from 'gill/programs/token'
 import { toast } from 'sonner'
 import { useTransactionToast } from '../use-transaction-toast'
+import { MetadataResponse, PairWithMetadata } from '@/types'
+import axios from 'axios'
 
 type CreatTokenProps = {
   mint: KeyPairSigner
@@ -90,7 +93,7 @@ export function useCreateTokenWithMetatData(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      toast.error(`Transaction failed!`)
     },
   })
 }
@@ -139,7 +142,7 @@ export function useMintToken(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      toast.error(`Transaction failed!`)
     },
   })
 }
@@ -196,7 +199,7 @@ export function useTransferToken(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      toast.error(`Transaction failed!`)
     },
   })
 }
@@ -211,7 +214,7 @@ export function useCreatePool(account: UiWalletAccount) {
 
   return useMutation({
     mutationKey: ['create-pool-pairs', { cluster, txSigner }],
-    mutationFn: async ({ pairedMint, pairName }: { pairedMint: Address; pairName: string }) => {
+    mutationFn: async ({ pairedMint }: { pairedMint: Address }) => {
       try {
         // get the latest blockhash
         const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()
@@ -244,7 +247,6 @@ export function useCreatePool(account: UiWalletAccount) {
           lpMint: lpMint,
           baseVault,
           pairedVault,
-          pairName,
           platformState: platformPDA,
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
           systemProgram: SYSTEM_PROGRAM_ADDRESS,
@@ -278,7 +280,7 @@ export function useCreatePool(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      toast.error(`Transaction failed!`)
     },
   })
 }
@@ -368,17 +370,67 @@ export function useGetPools() {
           })
           .send()
 
-        console.log('tes2', decoder.decode(PAIR_DISCRIMINATOR))
         const resolvedAccounts = await Promise.all(rawAccounts)
 
         const addresses = resolvedAccounts.map((account) => account.pubkey)
 
-        const pools = await fetchAllMaybePair(client.rpc, addresses, { commitment: 'confirmed' })
+        const pools = await fetchAllPair(client.rpc, addresses, { commitment: 'confirmed' })
 
-        return pools
+        const uniqueMints = new Set<string>()
+        const mintToMetadata: Record<string, MetadataResponse | null> = {}
+
+        pools.forEach((pair) => {
+          uniqueMints.add(pair.data.baseTokenMint.toString())
+          uniqueMints.add(pair.data.pairedTokenMint.toString())
+        })
+
+        const fetchPromises = Array.from(uniqueMints).map(async (mintAddress) => {
+          const metadata = await fetchMetadata(mintAddress as unknown as Address)
+          mintToMetadata[mintAddress] = metadata
+        })
+
+        // Wait for all fetches to complete
+        await Promise.all(fetchPromises)
+
+        const tokenWithMetadata = pools.map(pair => {
+          return {
+            ...pair,
+            baseTokenMetadata: mintToMetadata[pair.data.baseTokenMint.toString()],
+            pairedTokenMetadata: mintToMetadata[pair.data.pairedTokenMint.toString()],
+          };
+        });
+
+        return tokenWithMetadata
       } catch (error) {
         throw error
       }
     },
   })
+}
+
+async function fetchMetadata(mintAddress: Address): Promise<MetadataResponse | null> {
+  try {
+    const data = axios.post(
+      helius_url,
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'test',
+        method: 'getAsset',
+        params: {
+          id: `${mintAddress}`,
+        },
+      }),
+    )
+    const response = await (await data).data
+
+    const tokenMetadata: MetadataResponse = {
+      name: response?.result.content.metadata.name || 'Unknown',
+      symbol: response?.result.content.metadata.symbol || 'Unknown',
+    }
+
+    return tokenMetadata
+  } catch (error) {
+    console.error('Error fetching metadata:')
+    return null
+  }
 }

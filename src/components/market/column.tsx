@@ -1,47 +1,46 @@
-"use client"
+'use client'
 
-import { Pair } from "@/generated/ts";
-import { ColumnDef } from "@tanstack/react-table";
-import { MaybeAccount } from "gill";
-import { CellAction } from "./cell-action";
+import { Pair } from '@/generated/ts'
+import { ColumnDef } from '@tanstack/react-table'
+import { Account, MaybeAccount } from 'gill'
+import { CellAction } from './cell-action'
+import { Copy } from 'lucide-react'
+import { toast } from 'sonner'
+import { PairCellAction } from './pair-cell'
+import { PairWithMetadata } from '@/types'
 
-
-export const columns: ColumnDef<MaybeAccount<Pair>>[] = [
+export const columns: ColumnDef<PairWithMetadata>[] = [
   {
-    accessorKey: "pairedSymbol",
-    header: "Name",
+    accessorKey: 'name',
+    header: 'Name',
+    // filterFn: (row) => Boolean(row.getValue('pairedTokenMetadata.name')),
+    cell: ({ row }) => <PairCellAction pair={row.original} />,
   },
 
   {
-    accessorKey: "address",
-    header: "Pair Address",
+    accessorKey: 'price',
+    header: 'Price',
   },
- 
+
   {
-    accessorKey: "price",
-    header: "Price",
-  },
- 
-  {
-    accessorKey: "fee",
-    header: "Fee",
+    accessorKey: 'fee',
+    header: 'Fee',
   },
   {
-    accessorKey: "volume",
-    header: "Volume",
+    accessorKey: 'volume',
+    header: 'Volume',
   },
-//   {
-//     accessorKey: "tag",
-//     header: "Tag",
-//   },
- 
- 
+  //   {
+  //     accessorKey: "tag",
+  //     header: "Tag",
+  //   },
+
   // {
   //   accessorKey: "updatedAt",
   //   header: "Updated At",
   // },
   {
-    id: "actions",
-    cell: ({ row }) => <CellAction data={row.original} />
+    id: 'actions',
+    cell: ({ row }) => <CellAction data={row.original} />,
   },
-];
+]

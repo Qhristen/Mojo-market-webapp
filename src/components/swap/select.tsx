@@ -5,18 +5,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { ScrollArea } from '../ui/scroll-area'
-import { ArrowDown, ArrowDownToLine, ChevronDown, LinkIcon } from 'lucide-react'
+import { ArrowDown, ArrowDownToLine, ChevronDown, Link2, LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-
+import { Account, Address, getExplorerLink } from 'gill'
+import { Pair } from '@/generated/ts'
+import { useWalletUiCluster } from '@wallet-ui/react'
+import { useGetTokenMetadata } from '../market/market.data.access'
+import { PairWithMetadata } from '@/types'
 
 export interface ISelectModal {
-  name?:  "input" | "output";
-  value:string
-  current?:string
+  name?: 'input' | 'output'
+  value: PairWithMetadata
   centered?: boolean
-  tokens: Record<string, string>
-  onSelect: (address: string) => void // address should be type of PublicKey
+  tokens: PairWithMetadata[]
+  onSelect: (pair: PairWithMetadata) => void // address should be type of PublicKey
   className?: string
   hideBalancesInModal?: boolean
   handleAddToken?: (address: string) => void
@@ -28,15 +31,26 @@ export interface ISelectModal {
   // network: NetworkType
 }
 
-export default function SelectCoin({}:ISelectModal) {
+export default function SelectCoin({ tokens, onSelect, value }: ISelectModal) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button variant={"secondary"} className="flex items-center gap-2 border-none focus-visible:outline-0 focus-visible:border-none">
-            {/* <image src="https://resources.premierleague.com/premierleague/photos/players/250x250/p223094.png" className="h-[20px] w-[20px] bg-card rounded-md" alt="token" /> */}
+        <Button
+          variant={'secondary'}
+          className="flex items-center gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
+        >
+          {value ? (
+            <>
+              <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
+              <span>{value.pairedTokenMetadata?.symbol}</span>
+            </>
+          ) : (
+            <>
             <span>Select token</span>
-            <ChevronDown /> 
+          <ChevronDown />
+            </>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[350px]">
@@ -45,9 +59,9 @@ export default function SelectCoin({}:ISelectModal) {
         </DialogHeader>
         <ScrollArea className="max-h-[60vh]">
           <div className="space-y-2">
-            <Row />
-            <Row />
-            <Row />
+            {tokens.map((token, i) => (
+              <Row key={i} token={token} handleSelect={onSelect} setIsDialogOpen={setIsDialogOpen} />
+            ))}
           </div>
         </ScrollArea>
       </DialogContent>
@@ -55,25 +69,45 @@ export default function SelectCoin({}:ISelectModal) {
   )
 }
 
-const Row = ({ handleSelect }: { handleSelect?: (e: string) => void }) => {
+const Row = ({
+  handleSelect,
+  token,
+  setIsDialogOpen,
+}: {
+  handleSelect: (pair: PairWithMetadata) => void
+  token: PairWithMetadata
+  setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>
+}) => {
+  const { cluster } = useWalletUiCluster()
+  const pairedTokenInfo = useGetTokenMetadata({ address: token.data.pairedTokenMint })
+
   return (
     <div className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-md p-2">
       <div
-        //   onClick={() => handleSelect(info)}
+        onClick={() => {
+          handleSelect(token)
+
+          setIsDialogOpen(false)
+        }}
         className="flex flex-row items-center w-full h-full"
       >
         <div>
-          <img
-            //   src={info.logoURI}
-            className="h-[35px] w-[35px] rounded-md"
-          />
+          <img src={'assets/images/mjlogo.png'} className="h-10 w-10 rounded-full" />
         </div>
-        <div className="flex flex-col items-start ml-3 ">
-          <span className="font-bold text-md ">CR7</span>
-          <span className="text-sm opacity-80">Christiano Ronaldo</span>
+        <div className="flex  w-full flex-row items-center justify-between gap-3 ml-3 ">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-md ">{pairedTokenInfo.data?.symbol}</span>
+            <span className="text-sm opacity-80">{pairedTokenInfo.data?.name}</span>
+            <Link
+              href={getExplorerLink({
+                address: token.address,
+                cluster: cluster.cluster,
+              })}
+            ></Link>
+          </div>
+          <LinkIcon size={15} />
         </div>
       </div>
-     
     </div>
   )
 }

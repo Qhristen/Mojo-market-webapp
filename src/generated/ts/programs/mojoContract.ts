@@ -26,7 +26,7 @@ import {
 } from '../instructions';
 
 export const MOJO_CONTRACT_PROGRAM_ADDRESS =
-  'HQ31yGhtJXfrmi42HHEiCSZp5sxcqgEkqhEAYYmDgtcs' as Address<'HQ31yGhtJXfrmi42HHEiCSZp5sxcqgEkqhEAYYmDgtcs'>;
+  'AMGoaF1FYy6qijdYnLwqQmpxe7eQTVwAy2SvTQbHQcER' as Address<'AMGoaF1FYy6qijdYnLwqQmpxe7eQTVwAy2SvTQbHQcER'>;
 
 export enum MojoContractAccount {
   Pair,
@@ -185,7 +185,7 @@ export function identifyMojoContractInstruction(
 }
 
 export type ParsedMojoContractInstruction<
-  TProgram extends string = 'HQ31yGhtJXfrmi42HHEiCSZp5sxcqgEkqhEAYYmDgtcs',
+  TProgram extends string = 'AMGoaF1FYy6qijdYnLwqQmpxe7eQTVwAy2SvTQbHQcER',
 > =
   | ({
       instructionType: MojoContractInstruction.AddLiquidity;

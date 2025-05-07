@@ -1,10 +1,8 @@
-
 import { AppLayout } from '@/components/app-layout'
 import { AppProviders } from '@/components/app-providers'
 import type { Metadata } from 'next'
 import React from 'react'
 import './globals.css'
-
 
 export const metadata: Metadata = {
   title: 'Mojo market',
@@ -15,7 +13,7 @@ const links: { label: string; path: string }[] = [
   // More links...
   { label: 'Market', path: '/' },
   { label: 'Swap', path: '/swap' },
-  { label: 'Liquidity', path: '/liquidity' },
+  // { label: 'Liquidity', path: '/liquidity' },
   { label: 'Stats', path: '/stats' },
 ]
 
@@ -23,6 +21,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`antialiased`}>
+          <div className="absolute z-0 w-96 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full right-60 top-10 blur-3xl" />
+          <div className="absolute z-0 w-100 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full left-60 bottom-10 blur-3xl" />
         <AppProviders>
           <AppLayout links={links}>{children}</AppLayout>
         </AppProviders>

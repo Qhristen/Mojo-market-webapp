@@ -1,4 +1,5 @@
-import { KeyPairSigner } from "gill";
+import { Pair } from "@/generated/ts";
+import { Account, KeyPairSigner } from "gill";
 
   export interface Player {
     id: number;
@@ -20,3 +21,13 @@ import { KeyPairSigner } from "gill";
     symbol: string
     uri: string
   }
+
+  export type MetadataResponse = {
+    name: string
+    symbol: string
+  }
+
+  export type PairWithMetadata = Account<Pair> & {
+    baseTokenMetadata: MetadataResponse | null;
+    pairedTokenMetadata: MetadataResponse | null;
+  };

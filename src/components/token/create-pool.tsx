@@ -21,7 +21,6 @@ function CreatPool({
   const handleCreatePool = async () => {
     await createPool.mutateAsync({
       pairedMint: tokenData.mint.address,
-      pairName: tokenData.name,
     })
   }
 
