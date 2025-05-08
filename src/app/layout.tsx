@@ -20,12 +20,16 @@ const links: { label: string; path: string }[] = [
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`antialiased`}>
+      <body className={`antialiased relative`}>
+        <div className="fixed inset-0 z-[-1]">
           <div className="absolute z-0 w-96 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full right-60 top-10 blur-3xl" />
           <div className="absolute z-0 w-100 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full left-60 bottom-10 blur-3xl" />
-        <AppProviders>
-          <AppLayout links={links}>{children}</AppLayout>
-        </AppProviders>
+        </div>
+        <div className="z-10">
+          <AppProviders>
+            <AppLayout links={links}>{children}</AppLayout>
+          </AppProviders>
+        </div>
       </body>
     </html>
   )

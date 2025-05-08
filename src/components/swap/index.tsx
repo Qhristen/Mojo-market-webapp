@@ -9,9 +9,6 @@ export default function Swap() {
   const { account } = useWalletUi()
   return (
     <div>
-      <div className="absolute w-96 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full right-60 top-10 blur-3xl" />
-      <div className="absolute w-100 h-100 bg-gradient-to-b from-bg-gray-400/20 to-bg-transparent dark:bg-blue-600/20 rounded-full left-60 bottom-10 blur-3xl" />
-      <div className="z-20">
         {account ? (
           <SwapWrapper account={account} />
         ) : (
@@ -24,7 +21,6 @@ export default function Swap() {
             </div>
           </div>
         )}
-      </div>
     </div>
   )
 }

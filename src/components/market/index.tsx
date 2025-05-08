@@ -24,7 +24,7 @@ export function Market() {
   return (
     <div>
     
-      <Card className="flex itmes-center justify-between p-6 mt-2 bg-transparent  overflow-hidden relative">
+      <Card className="flex itmes-center justify-between py-6 mt-2 bg-transparent  overflow-hidden relative">
         <div className="absolute w-20 h-20 bg-gray-400/20 dark:bg-white/20 rounded-full right-20 top-10 animate-bounce blur-sm" />
         <div className="absolute w-16 h-16 bg-gray-400/20 dark:bg-white/20 rounded-full right-40 bottom-10 animate-bounce delay-300 blur-sm" />
         <div className="absolute w-20 h-20 bg-gray-400/20 dark:bg-white/20 rounded-full left-20 top-10 animate-bounce blur-sm" />

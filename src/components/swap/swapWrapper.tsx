@@ -15,7 +15,7 @@ import { PairWithMetadata } from '@/types'
 import { useSwap } from './swap-data-access'
 import { UiWalletAccount, useWalletUi } from '@wallet-ui/react'
 import { useGetTokenMetadata } from '../market/market.data.access'
-import { Slippage } from './slipage'
+import { Slippage as SlippageComponent } from './slipage'
 
 export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   const [inputAmount, setInputAmount] = useState<string>('')
@@ -27,8 +27,8 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   const swapMutation = useSwap(account)
 
   const baseToken = useGetTokenMetadata({ address: from })
-
   const pools = useGetPools()
+  const minimum_amount_out = Number(inputAmount) * (1 - slippage)
 
   useEffect(() => {
     const pairedMintParams = pools.data?.find((p) => p.data.pairedTokenMint === to)
@@ -37,18 +37,18 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
 
   const handleSwap = async () => {
     if (!outputToken?.data.pairedTokenMint) return
-    console.log(from, to, 'swap handelr')
+    console.log(from, to, minimum_amount_out, inputAmount, 'swap handelr')
 
     await swapMutation?.mutateAsync({
       inputAmount: Number(inputAmount),
       pairedMint: outputToken.data.pairedTokenMint,
-      minOutputAmount: Number(DEFAULT_SWAP_SLIPPAGE),
+      minOutputAmount: minimum_amount_out,
     })
   }
   return (
     <div className="mx-auto sm:w-[450px] w-[95%] rounded-md bg-card px-10 py-10 mt-5 sm:mb-0 lg:mt-10">
       <div className="flex items-center justify-end pb-2">
-        <Slippage slippage={slippage} setSlippage={setSlippage} />
+        <SlippageComponent slippage={slippage} setSlippage={setSlippage} />
         {/* <Button
           // onClick={refresh}
           // disabled={loadingRoute}
@@ -70,7 +70,7 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
             /> */}
           0.000
         </div>
-        <Card className="flex items-center justify-between bg-card border my-2 p-10">
+        <Card className="flex items-center justify-between bg-card border border-input my-2 p-10">
           <Button
             variant={'secondary'}
             className="flex items-center gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
@@ -115,7 +115,7 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
             /> */}
           0.000
         </div>
-        <Card className="flex items-center justify-between bg-card border my-2 p-10">
+        <Card className="flex items-center justify-between bg-card border border-input my-2 p-10">
           <SelectCoin
             name="output"
             value={outputToken!}

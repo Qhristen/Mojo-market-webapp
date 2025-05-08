@@ -18,7 +18,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
 
   return (
     <header className="relative z-50 py-2 bg-transparent">
-      <div className="max-w-6xl mx-auto flex justify-between items-center py-4 px-6 rounded-md bg-card text-card-foreground">
+      <div className="max-w-6xl mx-auto flex justify-between items-center py-4 rounded-md bg-transparent text-card-foreground">
         <div className="flex items-baseline gap-4">
           <Link className="text-xl hover:text-neutral-500 dark:hover:text-white" href="/">
             {/* <span className='font-PPMori'>Mojo market</span> */}
