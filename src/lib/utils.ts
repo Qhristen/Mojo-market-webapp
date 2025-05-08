@@ -11,3 +11,20 @@ export function ellipsify(str = '', len = 4, delimiter = '..') {
 
   return strLen >= limit ? str.substring(0, len) + delimiter + str.substring(strLen - len, strLen) : str
 }
+
+
+export function calculateExpectedOut(
+  amountIn: number,
+  reserveIn: number,
+  reserveOut: number,
+  feeRate = 0.003 // 0.3% default
+): number {
+  const amountInAfterFee = amountIn * (1 - feeRate);
+
+  const numerator = amountInAfterFee * reserveOut;
+  const denominator = reserveIn + amountInAfterFee;
+
+  const amountOut = numerator / denominator;
+
+  return amountOut;
+}

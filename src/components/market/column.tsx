@@ -13,7 +13,6 @@ export const columns: ColumnDef<PairWithMetadata>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    // filterFn: (row) => Boolean(row.getValue('pairedTokenMetadata.name')),
     cell: ({ row }) => <PairCellAction pair={row.original} />,
   },
 

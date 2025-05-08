@@ -94,7 +94,7 @@ export type SwapInstruction<
         ? WritableAccount<TAccountPairedVault>
         : TAccountPairedVault,
       TAccountPlatformTreasury extends string
-        ? ReadonlyAccount<TAccountPlatformTreasury>
+        ? WritableAccount<TAccountPlatformTreasury>
         : TAccountPlatformTreasury,
       TAccountBaseTokenAccount extends string
         ? WritableAccount<TAccountBaseTokenAccount>
@@ -257,7 +257,7 @@ export async function getSwapInstructionAsync<
     pairedVault: { value: input.pairedVault ?? null, isWritable: true },
     platformTreasury: {
       value: input.platformTreasury ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     baseTokenAccount: {
       value: input.baseTokenAccount ?? null,
@@ -464,7 +464,7 @@ export function getSwapInstruction<
     pairedVault: { value: input.pairedVault ?? null, isWritable: true },
     platformTreasury: {
       value: input.platformTreasury ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     baseTokenAccount: {
       value: input.baseTokenAccount ?? null,

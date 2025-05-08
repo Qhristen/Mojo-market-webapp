@@ -6,7 +6,7 @@ import {
 } from '@wallet-ui/react'
 import { useTransactionToast } from '../use-transaction-toast'
 import {
-    address,
+  address,
   Address,
   createTransaction,
   getAddressEncoder,
@@ -36,7 +36,15 @@ export function useSwap(account: UiWalletAccount) {
 
   return useMutation({
     mutationKey: ['swap-pairs', { cluster, txSigner }],
-    mutationFn: async ({ inputAmount, pairedMint, minOutputAmount }: { inputAmount: number; pairedMint: Address, minOutputAmount: number }) => {
+    mutationFn: async ({
+      inputAmount,
+      pairedMint,
+      minOutputAmount,
+    }: {
+      inputAmount: number
+      pairedMint: Address
+      minOutputAmount: number
+    }) => {
       try {
         // get the latest blockhash
         const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()
@@ -53,10 +61,22 @@ export function useSwap(account: UiWalletAccount) {
 
         const baseVault = await getAssociatedTokenAccountAddress(baseMint, pairPDA, TOKEN_PROGRAM_ADDRESS)
         const pairedVault = await getAssociatedTokenAccountAddress(pairedMint, pairPDA, TOKEN_PROGRAM_ADDRESS)
-        const baseTokenAccount = await getAssociatedTokenAccountAddress(baseMint, txSigner.address, TOKEN_PROGRAM_ADDRESS)
-        const pairTokenAccount = await getAssociatedTokenAccountAddress(pairedMint, txSigner.address, TOKEN_PROGRAM_ADDRESS)
+        const userBaseTokenAccount = await getAssociatedTokenAccountAddress(
+          baseMint,
+          txSigner.address,
+          TOKEN_PROGRAM_ADDRESS,
+        )
+        const userPairedTokenAccount = await getAssociatedTokenAccountAddress(
+          pairedMint,
+          txSigner.address,
+          TOKEN_PROGRAM_ADDRESS,
+        )
         const platformTreasury = await getAssociatedTokenAccountAddress(baseMint, platformPDA, TOKEN_PROGRAM_ADDRESS)
-  
+        const isBaseInput = pairedMint === baseMint
+
+        const inputTokenAccount = isBaseInput ? userBaseTokenAccount : userPairedTokenAccount
+        const outputTokenAccount = isBaseInput ? userPairedTokenAccount : userBaseTokenAccount
+
         const ix = await getSwapInstructionAsync({
           user: txSigner,
           pair: pairPDA,
@@ -66,13 +86,13 @@ export function useSwap(account: UiWalletAccount) {
           inputAmount: BigInt(inputAmount),
           baseVault,
           platformTreasury,
-          baseTokenAccount,
+          baseTokenAccount: inputTokenAccount,
           minOutputAmount: BigInt(minOutputAmount),
-          pairTokenAccount,
+          pairTokenAccount: outputTokenAccount,
           platformState: platformPDA,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
-          systemProgram: SYSTEM_PROGRAM_ADDRESS,        
+          systemProgram: SYSTEM_PROGRAM_ADDRESS,
         })
 
         const tx = createTransaction({

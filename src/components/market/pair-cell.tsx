@@ -29,6 +29,7 @@ export const PairCellAction: React.FC<PairCellActionProps> = ({ pair }) => {
           alt="icon"
         />
         <span className="font-jersey25 text-2xl">{pair.pairedTokenMetadata?.symbol ?? 'Unknown'}</span>
+        <span className="">{pair.pairedTokenMetadata?.name ?? 'Unknown'}</span>
       </div>
       <Copy
         onClick={() => {

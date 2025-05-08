@@ -5,7 +5,7 @@ import React from 'react'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Mojo market',
+  title: 'Mojo markets',
   description: 'Web3',
 }
 

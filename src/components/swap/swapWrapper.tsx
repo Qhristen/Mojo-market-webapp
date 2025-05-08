@@ -16,10 +16,11 @@ import { useSwap } from './swap-data-access'
 import { UiWalletAccount, useWalletUi } from '@wallet-ui/react'
 import { useGetTokenMetadata } from '../market/market.data.access'
 import { Slippage as SlippageComponent } from './slipage'
+import { calculateExpectedOut } from '@/lib/utils'
 
 export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   const [inputAmount, setInputAmount] = useState<string>('')
-  const [slippage, setSlippage] = useState<number>(1)
+  const [slippageTolerance, setSlippage] = useState<number>(1)
   const [outputToken, setOutputToken] = useState<PairWithMetadata | undefined>(undefined)
   const searchParams = useSearchParams()
   const from = address(searchParams.get('from') ?? baseMint)
@@ -28,7 +29,10 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
 
   const baseToken = useGetTokenMetadata({ address: from })
   const pools = useGetPools()
-  const minimum_amount_out = Number(inputAmount) * (1 - slippage)
+  const expectedOutPutAmount = calculateExpectedOut(Number(inputAmount), Number(outputToken?.data.baseReserve), Number(outputToken?.data.pairedReserve) )
+const minimum_amount_out =  Math.floor(expectedOutPutAmount * (1 - 5));
+console.log(expectedOutPutAmount, "test")
+
 
   useEffect(() => {
     const pairedMintParams = pools.data?.find((p) => p.data.pairedTokenMint === to)
@@ -48,7 +52,7 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   return (
     <div className="mx-auto sm:w-[450px] w-[95%] rounded-md bg-card px-10 py-10 mt-5 sm:mb-0 lg:mt-10">
       <div className="flex items-center justify-end pb-2">
-        <SlippageComponent slippage={slippage} setSlippage={setSlippage} />
+        <SlippageComponent slippage={slippageTolerance} setSlippage={setSlippage} />
         {/* <Button
           // onClick={refresh}
           // disabled={loadingRoute}
