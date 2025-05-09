@@ -1,17 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { ScrollArea } from '../ui/scroll-area'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { ScrollArea } from './ui/scroll-area'
 import { ArrowDown, ArrowDownToLine, ChevronDown, Link2, LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Account, Address, getExplorerLink } from 'gill'
 import { Pair } from '@/generated/ts'
 import { useWalletUiCluster } from '@wallet-ui/react'
-import { useGetTokenMetadata } from '../market/market.data.access'
+import { useGetTokenMetadata } from './market/market.data.access'
 import { PairWithMetadata } from '@/types'
 
 export interface ISelectModal {
@@ -35,15 +35,19 @@ export default function SelectCoin({ tokens, onSelect, value }: ISelectModal) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger className="w-full" asChild>
         <Button
           variant={'secondary'}
-          className="flex items-center gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
+          className="flex w-full items-center justify-between gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
         >
           {value ? (
             <>
+            <div className="flex items-center gap-2">
+
               <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
               <span>{value.pairedTokenMetadata?.symbol}</span>
+            </div>
+              <ChevronDown />
             </>
           ) : (
             <>

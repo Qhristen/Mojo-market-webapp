@@ -57,6 +57,23 @@ export function useGetBalance({ address }: { address: Address }) {
         .then((res) => res.value),
   })
 }
+export function useGetTokenAccountBalance({ address, account }: { address: Address, account: UiWalletAccount }) {
+  const { cluster } = useWalletUiCluster()
+  const { client } = useWalletUi()
+
+  const txSigner = useWalletAccountTransactionSendingSigner(account, cluster.id)
+
+  return useQuery({
+    queryKey: ['get-token-account-balance', { cluster, address, account }],
+    queryFn: async () => {
+      const ata = await getAssociatedTokenAccountAddress(address, txSigner, TOKEN_PROGRAM_ADDRESS)
+      return client.rpc
+        .getTokenAccountBalance(ata, { commitment: 'confirmed' })
+        .send()
+        .then((res) => res.value)
+    },
+  })
+}
 
 export function useGetSignatures({ address }: { address: Address }) {
   const { cluster } = useWalletUiCluster()
@@ -226,11 +243,7 @@ export function useInitializePlatform(account: UiWalletAccount) {
           seeds: ['platform-state'],
         })
 
-        const platformTreasury = await getAssociatedTokenAccountAddress(
-          baseMint,
-          platformPDA,
-          TOKEN_PROGRAM_ADDRESS,
-        )
+        const platformTreasury = await getAssociatedTokenAccountAddress(baseMint, platformPDA, TOKEN_PROGRAM_ADDRESS)
 
         // get the latest blockhash
         const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()

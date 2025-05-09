@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import SelectCoin from './select'
+import SelectCoin from '../select'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { ArrowUpDown, Loader2, RefreshCwIcon } from 'lucide-react'
@@ -9,7 +9,7 @@ import { Card } from '../ui/card'
 import { baseMint, DEFAULT_SWAP_SLIPPAGE } from '@/lib/constant'
 import { useGetPools } from '../token/create-token-data-access'
 import { useSearchParams } from 'next/navigation'
-import { Account, address } from 'gill'
+import { Account, Address, address } from 'gill'
 import { Pair } from '@/generated/ts'
 import { PairWithMetadata } from '@/types'
 import { useSwap } from './swap-data-access'
@@ -17,6 +17,7 @@ import { UiWalletAccount, useWalletUi } from '@wallet-ui/react'
 import { useGetTokenMetadata } from '../market/market.data.access'
 import { Slippage as SlippageComponent } from './slipage'
 import { calculateExpectedOut } from '@/lib/utils'
+import { useGetBalance, useGetTokenAccountBalance } from '../account/account-data-access'
 
 export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   const [inputAmount, setInputAmount] = useState<string>('')
@@ -29,9 +30,15 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
 
   const baseToken = useGetTokenMetadata({ address: from })
   const pools = useGetPools()
-  const expectedOutPutAmount = calculateExpectedOut(Number(inputAmount), Number(outputToken?.data.baseReserve), Number(outputToken?.data.pairedReserve) )
-const minimum_amount_out =  Math.floor(expectedOutPutAmount * (1 - 5));
-console.log(expectedOutPutAmount, "test")
+  const expectedOutPutAmount = calculateExpectedOut(
+    Number(inputAmount),
+    Number(outputToken?.data.baseReserve ?? 2),
+    Number(outputToken?.data.pairedReserve ?? 10),
+  )
+  const minimum_amount_out = Math.floor(expectedOutPutAmount * (1 - slippageTolerance))
+
+  const baseTokenAcc = useGetTokenAccountBalance({ address: baseMint, account })
+  const pairTokenAcc = useGetTokenAccountBalance({ address: outputToken?.data?.pairedTokenMint as Address, account })
 
 
   useEffect(() => {
@@ -72,12 +79,13 @@ console.log(expectedOutPutAmount, "test")
               setInput={setInputAmount}
               solBalance={solBalance}
             /> */}
-          0.000
+          {`Balance: ${baseTokenAcc.data ? baseTokenAcc.data?.uiAmount : 0}`}
         </div>
-        <Card className="flex items-center justify-between bg-card border border-input my-2 p-10">
+        <Card className="grid grid-cols-2 bg-card border border-input my-2 p-10">
           <Button
             variant={'secondary'}
-            className="flex items-center gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
+            disabled={true}
+            className="flex items-center justify-start gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
           >
             {baseToken.data ? (
               <>
@@ -117,16 +125,16 @@ console.log(expectedOutPutAmount, "test")
               token={outputTokenInfo}
               solBalance={solBalance}
             /> */}
-          0.000
+          {`Balance: ${pairTokenAcc.data ? pairTokenAcc.data?.uiAmount : 0}`}
         </div>
-        <Card className="flex items-center justify-between bg-card border border-input my-2 p-10">
+        <Card className="grid grid-cols-2 bg-card border border-input my-2 p-10">
           <SelectCoin
             name="output"
             value={outputToken!}
             tokens={pools.data ?? []}
             onSelect={(address) => setOutputToken(address)}
           />
-          <div className="text-4xl font-bold text-right bg-transparent">{0}</div>
+          <div className="text-4xl font-bold text-right bg-transparent">{minimum_amount_out > 0 ? minimum_amount_out : 0 }</div>
         </Card>
       </div>
       <Button
