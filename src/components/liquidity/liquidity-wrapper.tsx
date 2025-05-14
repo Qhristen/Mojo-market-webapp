@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeftRight, Info, ExternalLink, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeftRight, Info, ExternalLink, ZoomIn, ZoomOut, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import SelectCoin from '../select'
@@ -10,19 +10,24 @@ import { useGetPools } from '../token/create-token-data-access'
 import { useGetTokenMetadata } from '../market/market.data.access'
 import { baseMint } from '@/lib/constant'
 import { useGetTokenAccountBalance } from '../account/account-data-access'
-import { Address } from 'gill'
+import { Address, lamports } from 'gill'
 import { UiWalletAccount } from '@wallet-ui/react'
+import { useAddLiquidity } from './liquidity-data-access'
 
 export default function LiquidityWrapper({ account }: { account: UiWalletAccount }) {
   const pools = useGetPools()
   const [activeTab, setActiveTab] = useState('concentration')
   const [outputToken, setOutputToken] = useState<PairWithMetadata | undefined>(undefined)
+  const [inputToken, setInputToken] = useState<PairWithMetadata | undefined>(undefined)
+  const [baseAmount, setBaseAmount] = useState<number>(0)
+  const [pairedAmount, setPairedAmount] = useState<number>(0)
   const baseToken = useGetTokenMetadata({ address: baseMint })
+  const addLiquidityMutation = useAddLiquidity(account)
 
   const [selectedTVL, setSelectedTVL] = useState('0.01%')
   const [rangeValue, setRangeValue] = useState(34)
 
-  const baseTokenAcc = useGetTokenAccountBalance({ address: baseMint, account })
+  const baseTokenAcc = useGetTokenAccountBalance({ address: inputToken?.data.baseTokenMint as Address, account })
   const pairTokenAcc = useGetTokenAccountBalance({ address: outputToken?.data?.pairedTokenMint as Address, account })
 
   const tvlOptions = [
@@ -32,6 +37,15 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
     { percent: '0.1%', tvl: '1%', value: '$172.10' },
     { percent: '0.2%', tvl: '0%', value: '$0.00' },
   ]
+
+  const handleAddLiquidity = async () => {
+    if (!outputToken?.data.pairedTokenMint) return
+    await addLiquidityMutation.mutateAsync({
+      baseAmount: 0,
+      pairedAmount: 0,
+      pairedMint: outputToken.data.pairedTokenMint,
+    })
+  }
 
   return (
     <div className="pt-4">
@@ -63,22 +77,39 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
             <h2 className="text-xl mb-6">Tokens</h2>
             <div className="flex items-center justify-between mb-6">
               <div className="relative w-full mr-2">
-                <Button
-                  variant={'secondary'}
-                  disabled={true}
-                  className="flex w-full items-center justify-start gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
-                >
-                  {baseToken.data ? (
-                    <>
-                      <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
-                      <span>{baseToken.data.symbol}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Unknown</span>
-                    </>
-                  )}
-                </Button>
+              <SelectCoin
+                    name="input"
+                    value={inputToken!}
+                    tokens={ [{
+                          address: baseMint,
+                          executable: false,
+                          lamports: lamports(BigInt(0)),
+                          programAddress: baseMint,
+                          space: BigInt(0),
+                          data: {
+                            discriminator: new Uint8Array([0]),
+                            pairedTokenMint: baseMint,
+                            lpMint: baseMint,
+                            baseReserve: BigInt(0),
+                            pairedReserve: BigInt(0),
+                            baseTokenMint: baseMint,
+                            totalLiquidity: BigInt(0),
+                            bump: 0,
+                            lastSwapTime: BigInt(0),
+                            baseVault: baseMint,
+                            pairedVault: baseMint
+                          },
+                          baseTokenMetadata: {
+                            name: baseToken.data?.name ?? "Mojo",
+                            symbol: baseToken.data?.symbol ?? "Mojo"
+                          },
+                          pairedTokenMetadata:  {
+                            name: baseToken.data?.name ?? "Mojo",
+                            symbol: baseToken.data?.symbol ?? "Mojo"
+                          }
+                        }]}
+                    onSelect={(address) => setInputToken(address)}
+                  />
               </div>
 
               <div className="flex items-center justify-center mx-2">
@@ -128,7 +159,8 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
                 </div>
                 <Input
                   type="text"
-                  value="0.0"
+                  value={baseAmount}
+                  onChange={(e)=> setBaseAmount(Number(e.target.value))}
                   className="w-full p-0 m-0 text-xl border-none bg-transparent font-extrabold text-right md:text-4xl shadow-none dark:bg-transparent focus-visible:outline-0 focus-visible:border-none"
 
                   // disabled={true}
@@ -137,7 +169,7 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
               <div className="flex justify-between items-center text-sm mt-1 text-gray-400">
                 <div>
                   {' '}
-                  {`Balance: ${baseTokenAcc.data ? baseTokenAcc.data?.uiAmount : 0} ${baseToken.data?.symbol}`}
+                  {`Balance: ${baseTokenAcc.data ? baseTokenAcc.data?.uiAmount : 0} ${baseToken.data?.symbol ?? ""}`}
                 </div>
                 {/* <div className="flex gap-1">
                   <Button className="bg-green-500  px-2 py-1 rounded text-xs">Max</Button>
@@ -152,20 +184,21 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
               <div className="rounded-lg p-3 flex items-center">
                 <div className="flex items-center">
                   <div className="bg-blue-400 h-6 w-6 rounded-full flex items-center justify-centercr mr-2">
-                  <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
+                    <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
                   </div>
-                  <span className="mr-4">{outputToken?.pairedTokenMetadata?.symbol ?? ""}</span>
+                  <span className="mr-4">{outputToken?.pairedTokenMetadata?.symbol ?? ''}</span>
                 </div>
                 <Input
                   type="text"
-                  value="0.0"
+                  value={pairedAmount}
+                  onChange={(e)=> setPairedAmount(Number(e.target.value))}
                   className="w-full p-0 m-0 text-xl border-none bg-transparent font-extrabold text-right md:text-4xl shadow-none dark:bg-transparent focus-visible:outline-0 focus-visible:border-none"
                 />
               </div>
               <div className="flex justify-between items-center text-sm mt-1 text-gray-400">
                 <div>
                   {' '}
-                  {`Balance: ${pairTokenAcc.data ? pairTokenAcc.data?.uiAmount : 0} ${outputToken?.pairedTokenMetadata?.symbol}`}
+                  {`Balance: ${pairTokenAcc.data ? pairTokenAcc.data?.uiAmount : 0} ${outputToken?.pairedTokenMetadata?.symbol ?? ""}`}
                 </div>
                 {/* <div className="flex gap-1">
                   <Button className="bg-green-500  px-2 py-1 rounded text-xs">Max</Button>
@@ -175,8 +208,19 @@ export default function LiquidityWrapper({ account }: { account: UiWalletAccount
               </div>
             </div>
 
-            {/* Action Button */}
-            <Button className="w-full font-medium">Add liquidity</Button>
+            <Button
+              className="w-full font-medium"
+              disabled={!outputToken || addLiquidityMutation.isPending}
+              onClick={handleAddLiquidity}
+            >
+              {addLiquidityMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                'Add liquidity'
+              )}
+            </Button>
           </div>
         </div>
       </div>

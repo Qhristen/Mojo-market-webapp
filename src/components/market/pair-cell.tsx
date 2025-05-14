@@ -28,7 +28,7 @@ export const PairCellAction: React.FC<PairCellActionProps> = ({ pair }) => {
           src={'assets/images/mjlogo.png'}
           alt="icon"
         />
-        <span className="font-jersey25 text-2xl">{pair.pairedTokenMetadata?.symbol ?? 'Unknown'}</span>
+        <span className="font-bold text-xs">{pair.pairedTokenMetadata?.symbol ?? 'Unknown'}</span>
         <span className="">{pair.pairedTokenMetadata?.name ?? 'Unknown'}</span>
       </div>
       <Copy

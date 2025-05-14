@@ -7,6 +7,7 @@ import { ExplorerLink } from '../cluster/cluster-ui'
 import {
   useGetBalance,
   useGetSignatures,
+  useGetTokenAccountBalance,
   useGetTokenAccounts,
   useRequestAirdrop,
   useTransferSol,
@@ -21,6 +22,8 @@ import { Label } from '@/components/ui/label'
 import { UiWalletAccount, useWalletUi, useWalletUiCluster } from '@wallet-ui/react'
 import { address, Address, Lamports, lamportsToSol } from 'gill'
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
+import { useMintTokenToUser } from '../token/create-token-data-access'
+import { baseMint } from '@/lib/constant'
 
 export function AccountBalance({ address }: { address: Address }) {
   const query = useGetBalance({ address })
@@ -38,6 +41,14 @@ export function AccountChecker() {
     return null
   }
   return <AccountBalanceCheck address={address(account.address)} />
+}
+
+export function MojoChecker() {
+  const { account } = useWalletUi()
+  if (!account) {
+    return null
+  }
+  return <MojoBalanceCheck account={account} />
 }
 
 export function AccountBalanceCheck({ address }: { address: Address }) {
@@ -58,6 +69,35 @@ export function AccountBalanceCheck({ address }: { address: Address }) {
         }
       >
         You are connected to <strong>{cluster.label}</strong> but your account is not found on this cluster.
+      </AppAlert>
+    )
+  }
+  return null
+}
+
+export function MojoBalanceCheck({ account }: { account: UiWalletAccount }) {
+  const { cluster } = useWalletUiCluster()
+  const mutation = useMintTokenToUser(account)
+  const query = useGetTokenAccountBalance({ address: baseMint, account })
+
+  if (query.isLoading) {
+    return null
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <AppAlert
+        action={
+            <Button
+            variant="outline"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutateAsync({ amount: 5000000 }).catch((err) => console.log(err))}
+            >
+            Get MOJO Token
+            </Button>
+        }
+      >
+        You are connected to <strong>{cluster.label}</strong> but you don't have any MOJO tokens in your wallet.
       </AppAlert>
     )
   }

@@ -50,15 +50,21 @@ export const MOJO_CONTRACT_ERROR__NOT_PAUSED = 0x177f; // 6015
 export const MOJO_CONTRACT_ERROR__INVALID_PAUSE_STATE = 0x1780; // 6016
 /** InsufficientLiquidityMinted: Insufficient liquidity minted */
 export const MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY_MINTED = 0x1781; // 6017
+/** InsufficientLiquidity: Insufficient liquidity */
+export const MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY = 0x1782; // 6018
 /** MathOverflow: Math overflow occurred */
-export const MOJO_CONTRACT_ERROR__MATH_OVERFLOW = 0x1782; // 6018
+export const MOJO_CONTRACT_ERROR__MATH_OVERFLOW = 0x1783; // 6019
+/** InvalidFeeCollectorMint: Invalid fee collector mint */
+export const MOJO_CONTRACT_ERROR__INVALID_FEE_COLLECTOR_MINT = 0x1784; // 6020
 
 export type MojoContractError =
   | typeof MOJO_CONTRACT_ERROR__ALREADY_PAUSED
   | typeof MOJO_CONTRACT_ERROR__FEE_TOO_HIGH
+  | typeof MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY
   | typeof MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY_MINTED
   | typeof MOJO_CONTRACT_ERROR__INVALID_AMOUNT
   | typeof MOJO_CONTRACT_ERROR__INVALID_BASE_TOKEN
+  | typeof MOJO_CONTRACT_ERROR__INVALID_FEE_COLLECTOR_MINT
   | typeof MOJO_CONTRACT_ERROR__INVALID_FEE_CONFIG
   | typeof MOJO_CONTRACT_ERROR__INVALID_PAIR
   | typeof MOJO_CONTRACT_ERROR__INVALID_PAIRED_TOKEN
@@ -79,9 +85,11 @@ if (process.env.NODE_ENV !== 'production') {
   mojoContractErrorMessages = {
     [MOJO_CONTRACT_ERROR__ALREADY_PAUSED]: `Platform is already paused`,
     [MOJO_CONTRACT_ERROR__FEE_TOO_HIGH]: `Fee rate cannot exceed 10%`,
+    [MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY]: `Insufficient liquidity`,
     [MOJO_CONTRACT_ERROR__INSUFFICIENT_LIQUIDITY_MINTED]: `Insufficient liquidity minted`,
     [MOJO_CONTRACT_ERROR__INVALID_AMOUNT]: `Invalid amount`,
     [MOJO_CONTRACT_ERROR__INVALID_BASE_TOKEN]: `Base token must be the platform's base token (MOJO)`,
+    [MOJO_CONTRACT_ERROR__INVALID_FEE_COLLECTOR_MINT]: `Invalid fee collector mint`,
     [MOJO_CONTRACT_ERROR__INVALID_FEE_CONFIG]: `Invalid fee configuration`,
     [MOJO_CONTRACT_ERROR__INVALID_PAIR]: `Invalid token pair`,
     [MOJO_CONTRACT_ERROR__INVALID_PAIRED_TOKEN]: `Invalid paired token`,

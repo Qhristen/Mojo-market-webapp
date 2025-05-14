@@ -9,7 +9,7 @@ import { Card } from '../ui/card'
 import { baseMint, DEFAULT_SWAP_SLIPPAGE } from '@/lib/constant'
 import { useGetPools } from '../token/create-token-data-access'
 import { useSearchParams } from 'next/navigation'
-import { Account, Address, address } from 'gill'
+import { Account, Address, address, lamports } from 'gill'
 import { Pair } from '@/generated/ts'
 import { PairWithMetadata } from '@/types'
 import { useSwap } from './swap-data-access'
@@ -21,8 +21,10 @@ import { useGetBalance, useGetTokenAccountBalance } from '../account/account-dat
 
 export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
   const [inputAmount, setInputAmount] = useState<string>('')
+  const [outputAmount, setOutputAmount] = useState<string>('')
   const [slippageTolerance, setSlippage] = useState<number>(1)
   const [outputToken, setOutputToken] = useState<PairWithMetadata | undefined>(undefined)
+  const [inputToken, setInputToken] = useState<PairWithMetadata | undefined>(undefined)
   const searchParams = useSearchParams()
   const from = address(searchParams.get('from') ?? baseMint)
   const to = address(searchParams.get('to') ?? baseMint)
@@ -35,12 +37,13 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
     Number(outputToken?.data.baseReserve ?? 2),
     Number(outputToken?.data.pairedReserve ?? 10),
   )
-  const minimum_amount_out = Math.floor(expectedOutPutAmount * (1 - slippageTolerance))
 
-  const baseTokenAcc = useGetTokenAccountBalance({ address: baseMint, account })
+  const minOutputAmount = Math.floor(expectedOutPutAmount * (1 - slippageTolerance / 100))
+
+  const baseTokenAcc = useGetTokenAccountBalance({ address: inputToken?.data.baseTokenMint as Address, account })
   const pairTokenAcc = useGetTokenAccountBalance({ address: outputToken?.data?.pairedTokenMint as Address, account })
 
-
+  // Set tokens based on search params and pool data
   useEffect(() => {
     const pairedMintParams = pools.data?.find((p) => p.data.pairedTokenMint === to)
     setOutputToken(pairedMintParams)
@@ -48,12 +51,12 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
 
   const handleSwap = async () => {
     if (!outputToken?.data.pairedTokenMint) return
-    console.log(from, to, minimum_amount_out, inputAmount, 'swap handelr')
+    console.log(minOutputAmount, inputAmount, 'swap handelr')
 
     await swapMutation?.mutateAsync({
       inputAmount: Number(inputAmount),
       pairedMint: outputToken.data.pairedTokenMint,
-      minOutputAmount: minimum_amount_out,
+      minOutputAmount: minOutputAmount,
     })
   }
   return (
@@ -82,22 +85,41 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
           {`Balance: ${baseTokenAcc.data ? baseTokenAcc.data?.uiAmount : 0}`}
         </div>
         <Card className="grid grid-cols-2 bg-card border border-input my-2 p-10">
-          <Button
-            variant={'secondary'}
-            disabled={true}
-            className="flex items-center justify-start gap-2 border-none focus-visible:outline-0 focus-visible:border-none"
-          >
-            {baseToken.data ? (
-              <>
-                <img src={'assets/images/mjlogo.png'} className="h-6 w-6 bg-card rounded-full" alt="token" />
-                <span>{baseToken.data.symbol}</span>
-              </>
-            ) : (
-              <>
-                <span>Unknown</span>
-              </>
-            )}
-          </Button>
+          <SelectCoin
+            name="input"
+            value={inputToken!}
+            tokens={[
+              {
+                address: baseMint,
+                executable: false,
+                lamports: lamports(BigInt(0)),
+                programAddress: baseMint,
+                space: BigInt(0),
+                data: {
+                  discriminator: new Uint8Array([0]),
+                  pairedTokenMint: baseMint,
+                  lpMint: baseMint,
+                  baseReserve: BigInt(0),
+                  pairedReserve: BigInt(0),
+                  baseTokenMint: baseMint,
+                  totalLiquidity: BigInt(0),
+                  bump: 0,
+                  lastSwapTime: BigInt(0),
+                  baseVault: baseMint,
+                  pairedVault: baseMint,
+                },
+                baseTokenMetadata: {
+                  name: baseToken.data?.name ?? 'Mojo',
+                  symbol: baseToken.data?.symbol ?? 'Mojo',
+                },
+                pairedTokenMetadata: {
+                  name: baseToken.data?.name ?? 'Mojo',
+                  symbol: baseToken.data?.symbol ?? 'Mojo',
+                },
+              },
+            ]}
+            onSelect={(address) => setInputToken(address)}
+          />
           <Input
             value={inputAmount}
             type="number"
@@ -107,7 +129,7 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
           />
         </Card>
 
-        {/* <div className="flex justify-center items-center my-1">
+        <div className="flex justify-center items-center my-1">
           <ArrowUpDown
             onClick={() => {
               const temp = inputToken
@@ -116,9 +138,9 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
             }}
             className="h-[30px] w-[30px]  bg-card rounded-full cursor-pointer"
           />
-        </div> */}
+        </div>
 
-        <div className="flex flex-row justify-between mt-10">
+        <div className="flex flex-row justify-between">
           <span className="ml-3 font-bold ">You receive</span>
           {/* <Balance
               tokenAccounts={tokenAccounts}
@@ -134,7 +156,9 @@ export default function SwapWrapper({ account }: { account: UiWalletAccount }) {
             tokens={pools.data ?? []}
             onSelect={(address) => setOutputToken(address)}
           />
-          <div className="text-4xl font-bold text-right bg-transparent">{minimum_amount_out > 0 ? minimum_amount_out : 0 }</div>
+          <div className="text-4xl font-bold text-right bg-transparent">
+            {minOutputAmount > 0 ? minOutputAmount : 0}
+          </div>
         </Card>
       </div>
       <Button

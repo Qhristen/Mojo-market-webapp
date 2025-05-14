@@ -20,7 +20,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
         <img 
           src={player.image} 
           alt={player.name} 
-          className="w-full h-48 object-cover object-center"
+          className="w-full h-48 object-contain object-center"
         />
         <Badge variant={"outline"} className={`absolute top-2 right-2  font-bold py-1 px-2 rounded-full text-xs`}>
           {player.leagueBadge}

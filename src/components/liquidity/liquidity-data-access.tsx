@@ -21,12 +21,12 @@ import {
   getAssociatedTokenAccountAddress,
   TOKEN_PROGRAM_ADDRESS,
 } from 'gill/programs/token'
-import { getSwapInstructionAsync, MOJO_CONTRACT_PROGRAM_ADDRESS } from '@/generated/ts'
+import { getAddLiquidityInstruction, MOJO_CONTRACT_PROGRAM_ADDRESS } from '@/generated/ts'
 import { baseMint } from '@/lib/constant'
 import { SYSTEM_PROGRAM_ADDRESS } from 'gill/programs'
 import { toast } from 'sonner'
 
-export function useSwap(account: UiWalletAccount) {
+export function useAddLiquidity(account: UiWalletAccount) {
   const { cluster } = useWalletUiCluster()
   const { client } = useWalletUi()
   const toastTransaction = useTransactionToast(cluster)
@@ -35,63 +35,55 @@ export function useSwap(account: UiWalletAccount) {
   const addressEncoder = getAddressEncoder()
 
   return useMutation({
-    mutationKey: ['swap-pairs', { cluster, txSigner, account }],
+    mutationKey: ['add-liquidity', { cluster, txSigner }],
     mutationFn: async ({
-      inputAmount,
+      baseAmount,
       pairedMint,
-      minOutputAmount,
+      pairedAmount,
     }: {
-      inputAmount: number
+      baseAmount: number
       pairedMint: Address
-      minOutputAmount: number
+      pairedAmount: number
     }) => {
       try {
         // get the latest blockhash
         const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()
-
-        const [platformPDA] = await getProgramDerivedAddress({
-          programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
-          seeds: ['platform-state'],
-        })
-
+        
         const [pairPDA] = await getProgramDerivedAddress({
           programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
           seeds: ['pair', addressEncoder.encode(baseMint), addressEncoder.encode(pairedMint)],
         })
 
+        const [lpMintPDA] = await getProgramDerivedAddress({
+          programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
+          seeds: ['lp_mint', addressEncoder.encode(pairPDA)],
+        })
+
         const baseVault = await getAssociatedTokenAccountAddress(baseMint, pairPDA, TOKEN_PROGRAM_ADDRESS)
         const pairedVault = await getAssociatedTokenAccountAddress(pairedMint, pairPDA, TOKEN_PROGRAM_ADDRESS)
-        const userBaseTokenAccount = await getAssociatedTokenAccountAddress(
-          baseMint,
-          txSigner.address,
-          TOKEN_PROGRAM_ADDRESS,
-        )
-        const userPairedTokenAccount = await getAssociatedTokenAccountAddress(
+        const userBaseAta = await getAssociatedTokenAccountAddress(baseMint, txSigner.address, TOKEN_PROGRAM_ADDRESS)
+        const userPairedAta = await getAssociatedTokenAccountAddress(
           pairedMint,
           txSigner.address,
           TOKEN_PROGRAM_ADDRESS,
         )
-        const platformTreasury = await getAssociatedTokenAccountAddress(baseMint, platformPDA, TOKEN_PROGRAM_ADDRESS)
-        const isBaseInput = pairedMint === baseMint
 
-        const ix = await getSwapInstructionAsync({
+        const userLpAta = await getAssociatedTokenAccountAddress(lpMintPDA, txSigner, TOKEN_PROGRAM_ADDRESS)
+
+        const ix = getAddLiquidityInstruction({
           user: txSigner,
           pair: pairPDA,
-          baseTokenMint: baseMint,
-          pairedTokenMint: pairedMint,
           pairedVault,
-          inputAmount: BigInt(inputAmount),
           baseVault,
-          userBaseAta: userBaseTokenAccount,
-          userPairedAta: userPairedTokenAccount,
-          minOutputAmount: BigInt(minOutputAmount),
-          feeCollector: platformTreasury,
-          isBaseInput: true,
-          platformState: platformPDA,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+          userBaseAta,
+          userPairedAta,
+          lpMint:lpMintPDA,
+          baseAmount,
+          pairedAmount,
+          userLpAta,
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
           systemProgram: SYSTEM_PROGRAM_ADDRESS,
-          
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
         })
 
         const tx = createTransaction({

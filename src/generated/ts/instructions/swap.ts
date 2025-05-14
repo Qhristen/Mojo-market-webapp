@@ -11,6 +11,8 @@ import {
   fixDecoderSize,
   fixEncoderSize,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -52,24 +54,24 @@ export function getSwapDiscriminatorBytes() {
 export type SwapInstruction<
   TProgram extends string = typeof MOJO_CONTRACT_PROGRAM_ADDRESS,
   TAccountPlatformState extends string | IAccountMeta<string> = string,
+  TAccountUser extends string | IAccountMeta<string> = string,
   TAccountPair extends string | IAccountMeta<string> = string,
   TAccountBaseTokenMint extends string | IAccountMeta<string> = string,
   TAccountPairedTokenMint extends string | IAccountMeta<string> = string,
   TAccountBaseVault extends string | IAccountMeta<string> = string,
   TAccountPairedVault extends string | IAccountMeta<string> = string,
-  TAccountPlatformTreasury extends string | IAccountMeta<string> = string,
-  TAccountBaseTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountPairTokenAccount extends string | IAccountMeta<string> = string,
-  TAccountUser extends string | IAccountMeta<string> = string,
+  TAccountUserBaseAta extends string | IAccountMeta<string> = string,
+  TAccountUserPairedAta extends string | IAccountMeta<string> = string,
+  TAccountFeeCollector extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
     | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends
     | string
     | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+  TAccountSystemProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -78,6 +80,9 @@ export type SwapInstruction<
       TAccountPlatformState extends string
         ? ReadonlyAccount<TAccountPlatformState>
         : TAccountPlatformState,
+      TAccountUser extends string
+        ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
+        : TAccountUser,
       TAccountPair extends string
         ? WritableAccount<TAccountPair>
         : TAccountPair,
@@ -93,27 +98,24 @@ export type SwapInstruction<
       TAccountPairedVault extends string
         ? WritableAccount<TAccountPairedVault>
         : TAccountPairedVault,
-      TAccountPlatformTreasury extends string
-        ? WritableAccount<TAccountPlatformTreasury>
-        : TAccountPlatformTreasury,
-      TAccountBaseTokenAccount extends string
-        ? WritableAccount<TAccountBaseTokenAccount>
-        : TAccountBaseTokenAccount,
-      TAccountPairTokenAccount extends string
-        ? WritableAccount<TAccountPairTokenAccount>
-        : TAccountPairTokenAccount,
-      TAccountUser extends string
-        ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
-        : TAccountUser,
+      TAccountUserBaseAta extends string
+        ? WritableAccount<TAccountUserBaseAta>
+        : TAccountUserBaseAta,
+      TAccountUserPairedAta extends string
+        ? WritableAccount<TAccountUserPairedAta>
+        : TAccountUserPairedAta,
+      TAccountFeeCollector extends string
+        ? WritableAccount<TAccountFeeCollector>
+        : TAccountFeeCollector,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       TAccountAssociatedTokenProgram extends string
         ? ReadonlyAccount<TAccountAssociatedTokenProgram>
         : TAccountAssociatedTokenProgram,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -122,11 +124,13 @@ export type SwapInstructionData = {
   discriminator: ReadonlyUint8Array;
   inputAmount: bigint;
   minOutputAmount: bigint;
+  isBaseInput: boolean;
 };
 
 export type SwapInstructionDataArgs = {
   inputAmount: number | bigint;
   minOutputAmount: number | bigint;
+  isBaseInput: boolean;
 };
 
 export function getSwapInstructionDataEncoder(): Encoder<SwapInstructionDataArgs> {
@@ -135,6 +139,7 @@ export function getSwapInstructionDataEncoder(): Encoder<SwapInstructionDataArgs
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['inputAmount', getU64Encoder()],
       ['minOutputAmount', getU64Encoder()],
+      ['isBaseInput', getBooleanEncoder()],
     ]),
     (value) => ({ ...value, discriminator: SWAP_DISCRIMINATOR })
   );
@@ -145,6 +150,7 @@ export function getSwapInstructionDataDecoder(): Decoder<SwapInstructionData> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['inputAmount', getU64Decoder()],
     ['minOutputAmount', getU64Decoder()],
+    ['isBaseInput', getBooleanDecoder()],
   ]);
 }
 
@@ -160,84 +166,95 @@ export function getSwapInstructionDataCodec(): Codec<
 
 export type SwapAsyncInput<
   TAccountPlatformState extends string = string,
+  TAccountUser extends string = string,
   TAccountPair extends string = string,
   TAccountBaseTokenMint extends string = string,
   TAccountPairedTokenMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountPairedVault extends string = string,
-  TAccountPlatformTreasury extends string = string,
-  TAccountBaseTokenAccount extends string = string,
-  TAccountPairTokenAccount extends string = string,
-  TAccountUser extends string = string,
+  TAccountUserBaseAta extends string = string,
+  TAccountUserPairedAta extends string = string,
+  TAccountFeeCollector extends string = string,
   TAccountTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
-  platformState: Address<TAccountPlatformState>;
-  pair?: Address<TAccountPair>;
-  baseTokenMint: Address<TAccountBaseTokenMint>;
-  pairedTokenMint: Address<TAccountPairedTokenMint>;
-  baseVault: Address<TAccountBaseVault>;
-  pairedVault: Address<TAccountPairedVault>;
-  platformTreasury?: Address<TAccountPlatformTreasury>;
-  baseTokenAccount: Address<TAccountBaseTokenAccount>;
-  pairTokenAccount: Address<TAccountPairTokenAccount>;
+  /** The platform state contains global configuration */
+  platformState?: Address<TAccountPlatformState>;
+  /** The user performing the swap */
   user: TransactionSigner<TAccountUser>;
+  /** The pair (pool) being swapped with */
+  pair: Address<TAccountPair>;
+  /** Base token mint (MOJO) */
+  baseTokenMint: Address<TAccountBaseTokenMint>;
+  /** Paired token mint */
+  pairedTokenMint: Address<TAccountPairedTokenMint>;
+  /** Vault holding base tokens (MOJO) */
+  baseVault: Address<TAccountBaseVault>;
+  /** Vault holding paired tokens */
+  pairedVault: Address<TAccountPairedVault>;
+  /** User's base token (MOJO) account */
+  userBaseAta?: Address<TAccountUserBaseAta>;
+  /** User's paired token account */
+  userPairedAta?: Address<TAccountUserPairedAta>;
+  /** Platform fee collector account */
+  feeCollector: Address<TAccountFeeCollector>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  systemProgram?: Address<TAccountSystemProgram>;
   inputAmount: SwapInstructionDataArgs['inputAmount'];
   minOutputAmount: SwapInstructionDataArgs['minOutputAmount'];
+  isBaseInput: SwapInstructionDataArgs['isBaseInput'];
 };
 
 export async function getSwapInstructionAsync<
   TAccountPlatformState extends string,
+  TAccountUser extends string,
   TAccountPair extends string,
   TAccountBaseTokenMint extends string,
   TAccountPairedTokenMint extends string,
   TAccountBaseVault extends string,
   TAccountPairedVault extends string,
-  TAccountPlatformTreasury extends string,
-  TAccountBaseTokenAccount extends string,
-  TAccountPairTokenAccount extends string,
-  TAccountUser extends string,
+  TAccountUserBaseAta extends string,
+  TAccountUserPairedAta extends string,
+  TAccountFeeCollector extends string,
   TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof MOJO_CONTRACT_PROGRAM_ADDRESS,
 >(
   input: SwapAsyncInput<
     TAccountPlatformState,
+    TAccountUser,
     TAccountPair,
     TAccountBaseTokenMint,
     TAccountPairedTokenMint,
     TAccountBaseVault,
     TAccountPairedVault,
-    TAccountPlatformTreasury,
-    TAccountBaseTokenAccount,
-    TAccountPairTokenAccount,
-    TAccountUser,
+    TAccountUserBaseAta,
+    TAccountUserPairedAta,
+    TAccountFeeCollector,
     TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountAssociatedTokenProgram
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
   SwapInstruction<
     TProgramAddress,
     TAccountPlatformState,
+    TAccountUser,
     TAccountPair,
     TAccountBaseTokenMint,
     TAccountPairedTokenMint,
     TAccountBaseVault,
     TAccountPairedVault,
-    TAccountPlatformTreasury,
-    TAccountBaseTokenAccount,
-    TAccountPairTokenAccount,
-    TAccountUser,
+    TAccountUserBaseAta,
+    TAccountUserPairedAta,
+    TAccountFeeCollector,
     TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountAssociatedTokenProgram
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -247,6 +264,7 @@ export async function getSwapInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     platformState: { value: input.platformState ?? null, isWritable: false },
+    user: { value: input.user ?? null, isWritable: true },
     pair: { value: input.pair ?? null, isWritable: true },
     baseTokenMint: { value: input.baseTokenMint ?? null, isWritable: false },
     pairedTokenMint: {
@@ -255,25 +273,15 @@ export async function getSwapInstructionAsync<
     },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     pairedVault: { value: input.pairedVault ?? null, isWritable: true },
-    platformTreasury: {
-      value: input.platformTreasury ?? null,
-      isWritable: true,
-    },
-    baseTokenAccount: {
-      value: input.baseTokenAccount ?? null,
-      isWritable: true,
-    },
-    pairTokenAccount: {
-      value: input.pairTokenAccount ?? null,
-      isWritable: true,
-    },
-    user: { value: input.user ?? null, isWritable: true },
+    userBaseAta: { value: input.userBaseAta ?? null, isWritable: true },
+    userPairedAta: { value: input.userPairedAta ?? null, isWritable: true },
+    feeCollector: { value: input.feeCollector ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
     },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -284,24 +292,24 @@ export async function getSwapInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.pair.value) {
-    accounts.pair.value = await getProgramDerivedAddress({
+  if (!accounts.platformState.value) {
+    accounts.platformState.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(new Uint8Array([112, 97, 105, 114])),
-        getAddressEncoder().encode(expectAddress(accounts.baseTokenMint.value)),
-        getAddressEncoder().encode(
-          expectAddress(accounts.pairedTokenMint.value)
+        getBytesEncoder().encode(
+          new Uint8Array([
+            112, 108, 97, 116, 102, 111, 114, 109, 45, 115, 116, 97, 116, 101,
+          ])
         ),
       ],
     });
   }
-  if (!accounts.platformTreasury.value) {
-    accounts.platformTreasury.value = await getProgramDerivedAddress({
+  if (!accounts.userBaseAta.value) {
+    accounts.userBaseAta.value = await getProgramDerivedAddress({
       programAddress:
         'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
       seeds: [
-        getAddressEncoder().encode(expectAddress(accounts.platformState.value)),
+        getAddressEncoder().encode(expectAddress(accounts.user.value)),
         getBytesEncoder().encode(
           new Uint8Array([
             6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235,
@@ -313,35 +321,54 @@ export async function getSwapInstructionAsync<
       ],
     });
   }
+  if (!accounts.userPairedAta.value) {
+    accounts.userPairedAta.value = await getProgramDerivedAddress({
+      programAddress:
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.user.value)),
+        getBytesEncoder().encode(
+          new Uint8Array([
+            6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235,
+            121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133,
+            126, 255, 0, 169,
+          ])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.pairedTokenMint.value)
+        ),
+      ],
+    });
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.platformState),
+      getAccountMeta(accounts.user),
       getAccountMeta(accounts.pair),
       getAccountMeta(accounts.baseTokenMint),
       getAccountMeta(accounts.pairedTokenMint),
       getAccountMeta(accounts.baseVault),
       getAccountMeta(accounts.pairedVault),
-      getAccountMeta(accounts.platformTreasury),
-      getAccountMeta(accounts.baseTokenAccount),
-      getAccountMeta(accounts.pairTokenAccount),
-      getAccountMeta(accounts.user),
+      getAccountMeta(accounts.userBaseAta),
+      getAccountMeta(accounts.userPairedAta),
+      getAccountMeta(accounts.feeCollector),
       getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getSwapInstructionDataEncoder().encode(
@@ -350,18 +377,18 @@ export async function getSwapInstructionAsync<
   } as SwapInstruction<
     TProgramAddress,
     TAccountPlatformState,
+    TAccountUser,
     TAccountPair,
     TAccountBaseTokenMint,
     TAccountPairedTokenMint,
     TAccountBaseVault,
     TAccountPairedVault,
-    TAccountPlatformTreasury,
-    TAccountBaseTokenAccount,
-    TAccountPairTokenAccount,
-    TAccountUser,
+    TAccountUserBaseAta,
+    TAccountUserPairedAta,
+    TAccountFeeCollector,
     TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountAssociatedTokenProgram
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >;
 
   return instruction;
@@ -369,83 +396,94 @@ export async function getSwapInstructionAsync<
 
 export type SwapInput<
   TAccountPlatformState extends string = string,
+  TAccountUser extends string = string,
   TAccountPair extends string = string,
   TAccountBaseTokenMint extends string = string,
   TAccountPairedTokenMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountPairedVault extends string = string,
-  TAccountPlatformTreasury extends string = string,
-  TAccountBaseTokenAccount extends string = string,
-  TAccountPairTokenAccount extends string = string,
-  TAccountUser extends string = string,
+  TAccountUserBaseAta extends string = string,
+  TAccountUserPairedAta extends string = string,
+  TAccountFeeCollector extends string = string,
   TAccountTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
+  /** The platform state contains global configuration */
   platformState: Address<TAccountPlatformState>;
-  pair: Address<TAccountPair>;
-  baseTokenMint: Address<TAccountBaseTokenMint>;
-  pairedTokenMint: Address<TAccountPairedTokenMint>;
-  baseVault: Address<TAccountBaseVault>;
-  pairedVault: Address<TAccountPairedVault>;
-  platformTreasury: Address<TAccountPlatformTreasury>;
-  baseTokenAccount: Address<TAccountBaseTokenAccount>;
-  pairTokenAccount: Address<TAccountPairTokenAccount>;
+  /** The user performing the swap */
   user: TransactionSigner<TAccountUser>;
+  /** The pair (pool) being swapped with */
+  pair: Address<TAccountPair>;
+  /** Base token mint (MOJO) */
+  baseTokenMint: Address<TAccountBaseTokenMint>;
+  /** Paired token mint */
+  pairedTokenMint: Address<TAccountPairedTokenMint>;
+  /** Vault holding base tokens (MOJO) */
+  baseVault: Address<TAccountBaseVault>;
+  /** Vault holding paired tokens */
+  pairedVault: Address<TAccountPairedVault>;
+  /** User's base token (MOJO) account */
+  userBaseAta: Address<TAccountUserBaseAta>;
+  /** User's paired token account */
+  userPairedAta: Address<TAccountUserPairedAta>;
+  /** Platform fee collector account */
+  feeCollector: Address<TAccountFeeCollector>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  systemProgram?: Address<TAccountSystemProgram>;
   inputAmount: SwapInstructionDataArgs['inputAmount'];
   minOutputAmount: SwapInstructionDataArgs['minOutputAmount'];
+  isBaseInput: SwapInstructionDataArgs['isBaseInput'];
 };
 
 export function getSwapInstruction<
   TAccountPlatformState extends string,
+  TAccountUser extends string,
   TAccountPair extends string,
   TAccountBaseTokenMint extends string,
   TAccountPairedTokenMint extends string,
   TAccountBaseVault extends string,
   TAccountPairedVault extends string,
-  TAccountPlatformTreasury extends string,
-  TAccountBaseTokenAccount extends string,
-  TAccountPairTokenAccount extends string,
-  TAccountUser extends string,
+  TAccountUserBaseAta extends string,
+  TAccountUserPairedAta extends string,
+  TAccountFeeCollector extends string,
   TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof MOJO_CONTRACT_PROGRAM_ADDRESS,
 >(
   input: SwapInput<
     TAccountPlatformState,
+    TAccountUser,
     TAccountPair,
     TAccountBaseTokenMint,
     TAccountPairedTokenMint,
     TAccountBaseVault,
     TAccountPairedVault,
-    TAccountPlatformTreasury,
-    TAccountBaseTokenAccount,
-    TAccountPairTokenAccount,
-    TAccountUser,
+    TAccountUserBaseAta,
+    TAccountUserPairedAta,
+    TAccountFeeCollector,
     TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountAssociatedTokenProgram
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): SwapInstruction<
   TProgramAddress,
   TAccountPlatformState,
+  TAccountUser,
   TAccountPair,
   TAccountBaseTokenMint,
   TAccountPairedTokenMint,
   TAccountBaseVault,
   TAccountPairedVault,
-  TAccountPlatformTreasury,
-  TAccountBaseTokenAccount,
-  TAccountPairTokenAccount,
-  TAccountUser,
+  TAccountUserBaseAta,
+  TAccountUserPairedAta,
+  TAccountFeeCollector,
   TAccountTokenProgram,
-  TAccountSystemProgram,
-  TAccountAssociatedTokenProgram
+  TAccountAssociatedTokenProgram,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress =
@@ -454,6 +492,7 @@ export function getSwapInstruction<
   // Original accounts.
   const originalAccounts = {
     platformState: { value: input.platformState ?? null, isWritable: false },
+    user: { value: input.user ?? null, isWritable: true },
     pair: { value: input.pair ?? null, isWritable: true },
     baseTokenMint: { value: input.baseTokenMint ?? null, isWritable: false },
     pairedTokenMint: {
@@ -462,25 +501,15 @@ export function getSwapInstruction<
     },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     pairedVault: { value: input.pairedVault ?? null, isWritable: true },
-    platformTreasury: {
-      value: input.platformTreasury ?? null,
-      isWritable: true,
-    },
-    baseTokenAccount: {
-      value: input.baseTokenAccount ?? null,
-      isWritable: true,
-    },
-    pairTokenAccount: {
-      value: input.pairTokenAccount ?? null,
-      isWritable: true,
-    },
-    user: { value: input.user ?? null, isWritable: true },
+    userBaseAta: { value: input.userBaseAta ?? null, isWritable: true },
+    userPairedAta: { value: input.userPairedAta ?? null, isWritable: true },
+    feeCollector: { value: input.feeCollector ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
     },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -495,31 +524,31 @@ export function getSwapInstruction<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.platformState),
+      getAccountMeta(accounts.user),
       getAccountMeta(accounts.pair),
       getAccountMeta(accounts.baseTokenMint),
       getAccountMeta(accounts.pairedTokenMint),
       getAccountMeta(accounts.baseVault),
       getAccountMeta(accounts.pairedVault),
-      getAccountMeta(accounts.platformTreasury),
-      getAccountMeta(accounts.baseTokenAccount),
-      getAccountMeta(accounts.pairTokenAccount),
-      getAccountMeta(accounts.user),
+      getAccountMeta(accounts.userBaseAta),
+      getAccountMeta(accounts.userPairedAta),
+      getAccountMeta(accounts.feeCollector),
       getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getSwapInstructionDataEncoder().encode(
@@ -528,18 +557,18 @@ export function getSwapInstruction<
   } as SwapInstruction<
     TProgramAddress,
     TAccountPlatformState,
+    TAccountUser,
     TAccountPair,
     TAccountBaseTokenMint,
     TAccountPairedTokenMint,
     TAccountBaseVault,
     TAccountPairedVault,
-    TAccountPlatformTreasury,
-    TAccountBaseTokenAccount,
-    TAccountPairTokenAccount,
-    TAccountUser,
+    TAccountUserBaseAta,
+    TAccountUserPairedAta,
+    TAccountFeeCollector,
     TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountAssociatedTokenProgram
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >;
 
   return instruction;
@@ -551,19 +580,29 @@ export type ParsedSwapInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** The platform state contains global configuration */
     platformState: TAccountMetas[0];
-    pair: TAccountMetas[1];
-    baseTokenMint: TAccountMetas[2];
-    pairedTokenMint: TAccountMetas[3];
-    baseVault: TAccountMetas[4];
-    pairedVault: TAccountMetas[5];
-    platformTreasury: TAccountMetas[6];
-    baseTokenAccount: TAccountMetas[7];
-    pairTokenAccount: TAccountMetas[8];
-    user: TAccountMetas[9];
+    /** The user performing the swap */
+    user: TAccountMetas[1];
+    /** The pair (pool) being swapped with */
+    pair: TAccountMetas[2];
+    /** Base token mint (MOJO) */
+    baseTokenMint: TAccountMetas[3];
+    /** Paired token mint */
+    pairedTokenMint: TAccountMetas[4];
+    /** Vault holding base tokens (MOJO) */
+    baseVault: TAccountMetas[5];
+    /** Vault holding paired tokens */
+    pairedVault: TAccountMetas[6];
+    /** User's base token (MOJO) account */
+    userBaseAta: TAccountMetas[7];
+    /** User's paired token account */
+    userPairedAta: TAccountMetas[8];
+    /** Platform fee collector account */
+    feeCollector: TAccountMetas[9];
     tokenProgram: TAccountMetas[10];
-    systemProgram: TAccountMetas[11];
-    associatedTokenProgram: TAccountMetas[12];
+    associatedTokenProgram: TAccountMetas[11];
+    systemProgram: TAccountMetas[12];
   };
   data: SwapInstructionData;
 };
@@ -590,18 +629,18 @@ export function parseSwapInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       platformState: getNextAccount(),
+      user: getNextAccount(),
       pair: getNextAccount(),
       baseTokenMint: getNextAccount(),
       pairedTokenMint: getNextAccount(),
       baseVault: getNextAccount(),
       pairedVault: getNextAccount(),
-      platformTreasury: getNextAccount(),
-      baseTokenAccount: getNextAccount(),
-      pairTokenAccount: getNextAccount(),
-      user: getNextAccount(),
+      userBaseAta: getNextAccount(),
+      userPairedAta: getNextAccount(),
+      feeCollector: getNextAccount(),
       tokenProgram: getNextAccount(),
-      systemProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getSwapInstructionDataDecoder().decode(instruction.data),
   };

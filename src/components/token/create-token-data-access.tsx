@@ -1,12 +1,11 @@
 import {
-  fetchAllMaybePair,
   fetchAllPair,
   getCreatePairInstructionAsync,
   getPairDiscriminatorBytes,
-  MOJO_CONTRACT_PROGRAM_ADDRESS,
-  PAIR_DISCRIMINATOR,
+  MOJO_CONTRACT_PROGRAM_ADDRESS
 } from '@/generated/ts'
 import { baseMint, helius_url } from '@/lib/constant'
+import { MetadataResponse } from '@/types'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   UiWalletAccount,
@@ -14,6 +13,7 @@ import {
   useWalletUi,
   useWalletUiCluster,
 } from '@wallet-ui/react'
+import axios from 'axios'
 import {
   Address,
   createTransaction,
@@ -35,8 +35,6 @@ import {
 } from 'gill/programs/token'
 import { toast } from 'sonner'
 import { useTransactionToast } from '../use-transaction-toast'
-import { MetadataResponse, PairWithMetadata } from '@/types'
-import axios from 'axios'
 
 type CreatTokenProps = {
   mint: KeyPairSigner
@@ -68,11 +66,10 @@ export function useCreateTokenWithMetatData(account: UiWalletAccount) {
           feePayer: txSigner,
           latestBlockhash,
           mint: mint,
-          decimals: 6,
+          decimals: 9,
           metadata,
         })
 
-        console.log(tx.feePayer.address, 'fee payer')
         const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
         let signature = getBase58Decoder().decode(signedTransaction)
 
@@ -135,6 +132,47 @@ export function useMintToken(account: UiWalletAccount) {
         return signature
       } catch (error) {
         console.log(error, 'err')
+        throw error
+      }
+    },
+    onSuccess: (signature: string) => {
+      toastTransaction(signature)
+    },
+    onError: (error) => {
+      toast.error(`Transaction failed!`)
+    },
+  })
+}
+
+export function useMintTokenToUser(account: UiWalletAccount) {
+  const { cluster } = useWalletUiCluster()
+  const { client } = useWalletUi()
+  const toastTransaction = useTransactionToast(cluster)
+
+  const txSigner = useWalletAccountTransactionSendingSigner(account, cluster.id)
+  return useMutation({
+    mutationKey: ['mint-token-to-user', { cluster, txSigner }],
+    mutationFn: async ({ amount }: { amount: number }) => {
+      try {
+        const response = await axios.post(
+          '/api/airdrop',
+          JSON.stringify({
+            amount,
+            destination: account.address.toString(), // 👈 send user wallet
+          }),
+        )
+
+        if (response.status !== 200) {
+          throw new Error(response.data.error || 'Failed to airdrop token')
+        }
+
+        const data = await  response.data
+
+        const signature = data?.signature
+
+        return signature
+      } catch (error) {
+        console.error(error, 'mint-token-error')
         throw error
       }
     },
@@ -392,13 +430,13 @@ export function useGetPools() {
         // Wait for all fetches to complete
         await Promise.all(fetchPromises)
 
-        const tokenWithMetadata = pools.map(pair => {
+        const tokenWithMetadata = pools.map((pair) => {
           return {
             ...pair,
             baseTokenMetadata: mintToMetadata[pair.data.baseTokenMint.toString()],
             pairedTokenMetadata: mintToMetadata[pair.data.pairedTokenMint.toString()],
-          };
-        });
+          }
+        })
 
         return tokenWithMetadata
       } catch (error) {
