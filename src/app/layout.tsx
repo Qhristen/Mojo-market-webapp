@@ -14,7 +14,7 @@ const links: { label: string; path: string }[] = [
   { label: 'Market', path: '/' },
   { label: 'Swap', path: '/swap' },
   { label: 'Liquidity', path: '/liquidity' },
-  { label: 'Stake', path: '/stake' },
+  // { label: 'Stake', path: '/stake' },
   { label: 'Athlete stats', path: '/stats' },
 ]
 

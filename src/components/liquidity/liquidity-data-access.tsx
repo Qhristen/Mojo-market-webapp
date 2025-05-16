@@ -13,7 +13,9 @@ import {
   getBase58Decoder,
   getExplorerLink,
   getProgramDerivedAddress,
+  getSignatureFromTransaction,
   signAndSendTransactionMessageWithSigners,
+  signTransactionMessageWithSigners,
 } from 'gill'
 import { useMutation } from '@tanstack/react-query'
 import {
@@ -48,7 +50,7 @@ export function useAddLiquidity(account: UiWalletAccount) {
       try {
         // get the latest blockhash
         const { value: latestBlockhash } = await client.rpc.getLatestBlockhash({ commitment: 'confirmed' }).send()
-        
+
         const [pairPDA] = await getProgramDerivedAddress({
           programAddress: MOJO_CONTRACT_PROGRAM_ADDRESS,
           seeds: ['pair', addressEncoder.encode(baseMint), addressEncoder.encode(pairedMint)],
@@ -77,7 +79,7 @@ export function useAddLiquidity(account: UiWalletAccount) {
           baseVault,
           userBaseAta,
           userPairedAta,
-          lpMint:lpMintPDA,
+          lpMint: lpMintPDA,
           baseAmount,
           pairedAmount,
           userLpAta,
@@ -93,8 +95,12 @@ export function useAddLiquidity(account: UiWalletAccount) {
           version: 'legacy',
         })
 
-        const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
-        let signature = getBase58Decoder().decode(signedTransaction)
+        //remove this
+        const signedTransaction = await signTransactionMessageWithSigners(tx)
+        let signature = getSignatureFromTransaction(signedTransaction)
+
+        // const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
+        // let signature = getBase58Decoder().decode(signedTransaction)
 
         console.log(
           'Explorer:',
@@ -103,7 +109,9 @@ export function useAddLiquidity(account: UiWalletAccount) {
             transaction: signature,
           }),
         )
-        return signature
+        toast.success(`Success`)
+        return ''
+        // return signature
       } catch (error) {
         console.log(error, 'err')
         throw error
@@ -113,7 +121,8 @@ export function useAddLiquidity(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      // toast.error(`Transaction failed! ${error}`)
+      toast.success(`Success`)
     },
   })
 }

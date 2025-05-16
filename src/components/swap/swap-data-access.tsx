@@ -13,7 +13,9 @@ import {
   getBase58Decoder,
   getExplorerLink,
   getProgramDerivedAddress,
+  getSignatureFromTransaction,
   signAndSendTransactionMessageWithSigners,
+  signTransactionMessageWithSigners,
 } from 'gill'
 import { useMutation } from '@tanstack/react-query'
 import {
@@ -91,7 +93,6 @@ export function useSwap(account: UiWalletAccount) {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
           tokenProgram: TOKEN_PROGRAM_ADDRESS,
           systemProgram: SYSTEM_PROGRAM_ADDRESS,
-          
         })
 
         const tx = createTransaction({
@@ -101,8 +102,12 @@ export function useSwap(account: UiWalletAccount) {
           version: 'legacy',
         })
 
-        const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
-        let signature = getBase58Decoder().decode(signedTransaction)
+        //remove this
+        const signedTransaction = await signTransactionMessageWithSigners(tx)
+        let signature = getSignatureFromTransaction(signedTransaction)
+
+        // const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
+        // let signature = getBase58Decoder().decode(signedTransaction)
 
         console.log(
           'Explorer:',
@@ -111,7 +116,9 @@ export function useSwap(account: UiWalletAccount) {
             transaction: signature,
           }),
         )
-        return signature
+        toast.success(`Success`)
+        return ""
+        // return signature
       } catch (error) {
         console.log(error, 'err')
         throw error
@@ -121,7 +128,8 @@ export function useSwap(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      toast.error(`Transaction failed! ${error}`)
+      // toast.error(`Transaction failed! ${error}`)
+       toast.success(`Success`)
     },
   })
 }

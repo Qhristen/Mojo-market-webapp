@@ -37,7 +37,7 @@ export default function Chart() {
       return (
         <div className="bg-gray-800 p-2 rounded-md border border-gray-700 text-xs">
           {/* <p className="text-gray-200">hell</p> */}
-          <p className="text-green-400 font-medium">$100</p>
+          <p className="text-green-400 font-medium">$1.2</p>
         </div>
       )
   }
