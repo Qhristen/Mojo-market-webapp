@@ -102,12 +102,9 @@ export function useSwap(account: UiWalletAccount) {
           version: 'legacy',
         })
 
-        //remove this
-        const signedTransaction = await signTransactionMessageWithSigners(tx)
-        let signature = getSignatureFromTransaction(signedTransaction)
-
-        // const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
-        // let signature = getBase58Decoder().decode(signedTransaction)
+    
+        const signedTransaction = await signAndSendTransactionMessageWithSigners(tx)
+        let signature = getBase58Decoder().decode(signedTransaction)
 
         console.log(
           'Explorer:',
@@ -116,9 +113,7 @@ export function useSwap(account: UiWalletAccount) {
             transaction: signature,
           }),
         )
-        toast.success(`Success`)
-        return ""
-        // return signature
+        return signature
       } catch (error) {
         console.log(error, 'err')
         throw error
@@ -128,8 +123,7 @@ export function useSwap(account: UiWalletAccount) {
       toastTransaction(signature)
     },
     onError: (error) => {
-      // toast.error(`Transaction failed! ${error}`)
-       toast.success(`Success`)
+      toast.error(`Transaction failed! ${error}`)
     },
   })
 }

@@ -1,13 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
 import { useGetPools } from '../token/create-token-data-access'
 import { Card } from '../ui/card'
 import { DataTable } from '../ui/data-table'
-import Chart from './chart'
+import { ChartComponent } from './chart'
 import { columns } from './column'
-import { ColumnDef } from '@tanstack/react-table'
-import { PairWithMetadata } from '@/types'
 
 interface Props {
   page: number
@@ -27,12 +24,7 @@ export function Market() {
 
   return (
     <div>
-      {/* <Card className="flex itmes-center justify-between py-6 mt-2 bg-transparent  overflow-hidden relative">
-      <Card>
-        
-        </Card>
-      </Card> */}
-      <Chart />
+      <ChartComponent  />
       <Card className='mt-10 p-4'>
         <DataTable columns={columns} data={pools.data ?? []} pageCount={0} pageIndex={0} nextPage={0} />
       </Card>
