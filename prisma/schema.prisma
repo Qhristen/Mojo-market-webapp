@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------
+// ENUMS
+// ---------------------
+// enum Sport {
+//   FOOTBALL
+//   BASKETBALL
+//   TENNIS
+// }
+
+enum StatType {
+  GOALS
+  ASSISTS
+  POINTS
+  REBOUNDS
+  BLOCKS
+  MINUTES
+}
+
+enum BetStatus {
+  PENDING
+  WON
+  LOST
+  CANCELED
+}
+
+enum OverUnder {
+  OVER
+  UNDER
+}
+
+// ---------------------
+// MODELS
+// ---------------------
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  username      String   @unique
+  walletAddress String
+  avatar        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bets Bet[]
+}
+
+// sport
+model Sport {
+  id        String   @id @default(uuid())
+  name      String   // e.g. Football, Basketball, Volleyball
+  leagues   League[]
+  teams     Team[]   @relation("SportTeams")
+  players   Player[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+// League → can host multiple teams
+model League {
+  id        String   @id @default(uuid())
+  name      String
+  sport     Sport   @relation(fields: [sportId], references: [id])
+  sportId   String
+  createdAt DateTime @default(now())
+
+  teams   Team[]  @relation("LeagueTeams")
+  matches Match[]
+}
+
+// Team → can play multiple leagues
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  avatar    String
+  createdAt DateTime @default(now())
+
+  sport     Sport    @relation("SportTeams", fields: [sportId], references: [id])
+  sportId   String
+
+  players Player[]
+  leagues League[] @relation("LeagueTeams")
+}
+
+// Player → belongs to one team, has token
+model Player {
+  id       String  @id @default(uuid())
+  name     String
+  avatar   String
+  position String
+  sport    Sport   @relation(fields: [sportId], references: [id])
+  sportId  String
+  team     Team?   @relation(fields: [teamId], references: [id])
+  teamId   String?
+
+  stats        PlayerStat[]
+  performances PlayerPerformance[]
+  token        Token?
+  bets         Bet[]
+}
+
+// Match → belongs to a league
+model Match {
+  id        String   @id @default(uuid())
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  stats        PlayerStat[]
+  bets         Bet[]
+  performances PlayerPerformance[] // relation to PlayerPerformance
+}
+
+// PlayerStat → raw stats for each match
+model PlayerStat {
+  id       String @id @default(uuid())
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String
+  match    Match  @relation(fields: [matchId], references: [id])
+  matchId  String
+
+  type      StatType
+  value     Float
+  createdAt DateTime @default(now())
+}
+
+// PlayerPerformance → calculated performance %
+model PlayerPerformance {
+  id       String  @id @default(uuid())
+  player   Player  @relation(fields: [playerId], references: [id])
+  playerId String
+  match    Match?  @relation(fields: [matchId], references: [id])
+  matchId  String?
+
+  performancePct Float // overall performance % (0–100)
+  calculatedAt   DateTime @default(now())
+}
+
+// Token → pegged to player performance
+model Token {
+  id        String   @id @default(uuid())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String   @unique
+  symbol    String   @unique // e.g. $MESSI
+  mint      String
+  price     Float    @default(1) // fluctuates with performance
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Bet → user bets on player performance
+model Bet {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String
+
+  match   Match  @relation(fields: [matchId], references: [id])
+  matchId String
+
+  statType     StatType // e.g. GOALS, POINTS
+  thresholdPct Float // % threshold for performance
+  overUnder    OverUnder // OVER or UNDER
+
+  amount Float
+  odds   Float
+  status BetStatus @default(PENDING)
+  payout Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

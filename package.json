@@ -12,13 +12,23 @@
     "start": "next start",
     "create-codama-idl": "npx tsx scripts/create-codama-idl.ts",
     "codama-generate-client": "npx tsx scripts/codama-client.ts",
-    "generate": "npm run create-codama-idl && npm run codama-generate-client"
+    "generate": "npm run create-codama-idl && npm run codama-generate-client",
+    "db:generate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "@metaplex-foundation/umi": "^1.2.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.2.0",
     "@metaplex-foundation/umi-uploader-irys": "^1.2.0",
+    "@prisma/client": "^6.16.2",
+    "@prisma/extension-accelerate": "^2.0.2",
     "@radix-ui/react-accordion": "^1.2.8",
     "@radix-ui/react-avatar": "^1.1.7",
     "@radix-ui/react-checkbox": "^1.2.3",
@@ -35,6 +45,7 @@
     "@radix-ui/react-switch": "^1.2.2",
     "@radix-ui/react-tabs": "^1.1.9",
     "@radix-ui/react-tooltip": "^1.2.4",
+    "@reduxjs/toolkit": "^2.9.0",
     "@solana/webcrypto-ed25519-polyfill": "^2.1.0",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-table": "^8.21.3",
@@ -58,6 +69,7 @@
     "react-error-boundary": "^5.0.0",
     "react-hook-form": "^7.56.1",
     "react-hot-toast": "^2.5.2",
+    "react-redux": "^9.2.0",
     "react-ts-tradingview-widgets": "^1.2.8",
     "recharts": "^2.15.3",
     "sonner": "^2.0.3",
@@ -74,8 +86,9 @@
     "eslint": "^9.25.1",
     "eslint-config-next": "15.3.1",
     "prettier": "^3.5.3",
+    "prisma": "^6.16.2",
     "tailwindcss": "^4.1.4",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.3",
     "ws": "^8.18.1"
   }

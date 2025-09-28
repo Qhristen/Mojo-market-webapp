@@ -6,7 +6,7 @@ import { existsSync, mkdirSync } from 'fs';
 
 const codama = createFromRoot(codamaIDL as unknown as RootNode);
 
-const folderPath = join(process.cwd(), 'src', 'generated', 'ts');
+const folderPath = join(process.cwd(), 'src', 'generated', 'codama');
 
 if (!existsSync(folderPath)) {
     mkdirSync(folderPath, { recursive: true });
